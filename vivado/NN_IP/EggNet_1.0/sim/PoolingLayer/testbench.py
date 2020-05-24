@@ -9,7 +9,6 @@ import pathlib
 from vunit import VUnit
 import getpass
 
-TESTBENCH = "tb_conv_channel"
 
 class Simulator:
     def __init__(self, vunit: VUnit, libname:str):
@@ -22,10 +21,12 @@ class Simulator:
         
         # -- Add testbench and all vhdl files in sim folder --
         self.lib.add_source_files(LOCAL_ROOT /"*.vhd")
-        self.TB = self.lib.test_bench(TESTBENCH) # 
+        self.tb_hpool = lib.test_bench('tb_hpool')
+        self.tb_hpool.set_sim_option('ghdl.sim_flags', [f'--vcd={ROOT / "tmp" / "tb_hpool.vcd"}'])
         
+        self.tb_vpool = lib.test_bench('tb_vpool')
+        self.tb_vpool.set_sim_option('ghdl.sim_flags', [f'--vcd={ROOT / "tmp" / "tb_vpool.vcd"}'])
         # -- Set compile options 
-        self.TB.set_sim_option('ghdl.sim_flags', [f'--vcd={ROOT / "tmp" / TESTBENCH + ".vcd"}'])
         self.VU.set_compile_option("ghdl.flags", ["--ieee=synopsys"])
         # TODO: Testdata generation 
         
@@ -41,8 +42,12 @@ class Simulator:
 if __name__ == "__main__":
     
     ROOT = pathlib.Path(__file__).parents[2]
-    sys.path.append(ROOT)
+    
     # Coolere lösung wäre wenn hier run.py in root mit den tb_conv_channel als argument aufgerufen wird
+    #sys.path.append(ROOT)
+    #import run 
+    #.. 
+    #..
     
     SRC_ROOT = pathlib.Path(__file__).parents[2] / 'src'
     os.makedirs(ROOT / "tmp", exist_ok=True)
@@ -59,6 +64,7 @@ if __name__ == "__main__":
     VU.enable_location_preprocessing()
     VU.enable_check_preprocessing()
     VU.add_osvvm()  # Add support for OSVVM
+    VU.add_json4vhdl()
     VU.add_external_library("unisim", UNISIM_ROOT)
     
     lib = VU.add_library("EggNet", vhdl_standard="08")
