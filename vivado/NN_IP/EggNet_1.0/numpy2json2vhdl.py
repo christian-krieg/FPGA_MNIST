@@ -107,7 +107,6 @@ def setup_vunit(VU,TB,JSON_PATH):
     None.
 
     """
-    VU.add_json4vhdl()
     TB_CFG = read_json(JSON_PATH)
     TB_CFG["dump_debug_data"] = False
     JSON_STR = encode_json(TB_CFG)
