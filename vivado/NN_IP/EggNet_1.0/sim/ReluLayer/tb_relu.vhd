@@ -2,7 +2,7 @@ library IEEE;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library vuint;
+library vunit_lib;
 context vunit_lib.vunit_context;
 
 entity tb_relu is
@@ -15,10 +15,8 @@ end tb_relu;
 architecture arch of tb_relu is
 
     component relu_nbit
-        generic
-            (N : integer);
-        port
-        (
+        generic (N : integer);
+        port (
             x_i : in std_logic_vector(N - 1 downto 0);
             x_o : out std_logic_vector(N - 1 downto 0));
     end component;
@@ -60,12 +58,10 @@ begin
 
     -- port mapping
     dut : relu_nbit
-    generic
-    map(
-    N => N_BITS_TEST
+    generic map(
+        N => N_BITS_TEST
     )
-    port map
-    (
+    port map(
         x_i => input_data,
         x_o => output_data
     );
@@ -81,6 +77,8 @@ begin
             wait;
         end if;
     end process; -- clkgen
+
+    
     STIM : process
     begin
 
@@ -89,17 +87,18 @@ begin
 
         -- Check all test vectors
         for i in test_vectors'range loop
+
             -- Assign values of vector to signals
+            wait until falling_edge(clk);
             input_data      <= test_vectors(i).test_value;
             exp_output_data <= test_vectors(i).exp_out;
-            wait for CLK_PERIOD/2;
+           
+            wait until rising_edge(clk);
+            check_equal(output_data, exp_output_data);
+            
             assert (output_data = test_vectors(i).exp_out)
-
-            -- image is used for string-representation of integer etc.
-
-            report "test_vector " & integer'image(i) & " failed " severity error;
-
-            wait for CLK_PERIOD/2;
+            report "test_vector " & integer'image(i) & " failed " 
+            severity error;
         end loop;
 
         -- End simulation

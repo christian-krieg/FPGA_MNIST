@@ -11,14 +11,16 @@ import getpass
 
 
 class Simulator:
-    def __init__(self, vunit: VUnit, libname:str):
+    def __init__(self, vunit: VUnit, libname:str, root_path:pathlib.Path):
         # -- Set up Vunit --- 
-        self.VU = vunit; # VUNIT class 
-        self.lib = vunit.library(libname)
+        self.VU = vunit # VUNIT class 
+        lib = vunit.library(libname)
+        self.lib = lib
         
         # -- Set up workspace -- 
         LOCAL_ROOT = pathlib.Path(__file__).parent
-        
+        ROOT = root_path
+
         # -- Add testbench and all vhdl files in sim folder --
         self.lib.add_source_files(LOCAL_ROOT /"*.vhd")
         self.tb_hpool = lib.test_bench('tb_hpool')
@@ -30,7 +32,7 @@ class Simulator:
         self.VU.set_compile_option("ghdl.flags", ["--ieee=synopsys"])
         # TODO: Testdata generation 
         
-    def generate_testdata():
+    def generate_testdata(self):
         pass        
     
     def execute(self):
