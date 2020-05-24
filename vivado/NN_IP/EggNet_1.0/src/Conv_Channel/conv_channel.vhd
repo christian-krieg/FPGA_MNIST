@@ -11,7 +11,7 @@ entity Conv_channel is
     LAYER_ID : integer := 0; -- ID of the Layer. Reuired for reading correct MIF files
     OUTPUT_CHANNEL_ID : integer := 0; -- ID of the output channel. Required for reading correct MIF files
     INPUT_CHANNEL_NUMBER : integer range 1 to 512 := 1; -- Number of input channels 
-    MIF_PATH : STRING  := "C:/Users/lukas/Documents/SoC_Lab/FPGA_MNIST/vivado/NN_IP/EggNet_1.0/mif/" --try if relative path is working 
+    MIF_PATH : STRING  := "C:/Users/lukas/Documents/SoC_Lab/FPGA_MNIST/vivado/NN_IP/EggNet_1.0/mif/"; --try if relative path is working 
     WEIGHT_MIF_PREAMBLE : STRING := "Weight_";
     BIAS_MIF_PREAMBLE : STRING := "Bias_";
     CH_FRAC_MIF_PREAMBLE : STRING := "Channel_Fraction_shift_";

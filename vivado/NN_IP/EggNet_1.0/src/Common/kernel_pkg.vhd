@@ -34,9 +34,9 @@ package kernel_pkg is
     -- -- Array to store the sign of the shifts, where 0 corresponds to positive (+) and 1 corresponds to negative (-)
     -- constant CONV_KERNEL_WEIGHT_SIGN_NEGATIVE : std_logic := '1';
     -- constant CONV_KERNEL_WEIGHT_SIGN_POSITIVE : std_logic := '0';
-    -- type conv_kernel_3x3_weight_sign_t is array(0 to KERNEL_SIZE - 1) of std_logic;
-    -- type conv_channel_kernel_shift_t is array (natural range <>) of conv_kernel_3x3_weight_shift_t;
-    -- type conv_channel_kernel_sign_t is array (natural range <>) of conv_kernel_3x3_weight_sign_t;
+    type conv_kernel_3x3_weight_sign_t is array(0 to KERNEL_SIZE - 1) of std_logic;
+    type conv_channel_kernel_shift_t is array (natural range <>) of conv_kernel_3x3_weight_shift_t;
+    type conv_channel_kernel_sign_t is array (natural range <>) of conv_kernel_3x3_weight_sign_t;
     -- type conv_channel_array is array (natural range <>) of < element_type > ;
     
 end package kernel_pkg;
