@@ -24,6 +24,7 @@ ROOT = pathlib.Path(__file__).parent
 SRC_ROOT = pathlib.Path(__file__).parent / 'src'
 SIM_ROOT = pathlib.Path(__file__).parent / 'sim'
 os.makedirs(ROOT / "tmp", exist_ok=True)
+UNISIM_ROOT = "C:/msys64/mingw64/lib/ghdl/vendors/xilinx-vivado/unisim/v08"
 
 # --- Setup VUNIT
 VU = VUnit.from_argv()
@@ -33,7 +34,7 @@ VU = VUnit.from_argv()
 VU.enable_location_preprocessing()
 VU.enable_check_preprocessing()
 VU.add_osvvm()  # Add support for OSVVM
-
+VU.add_external_library("unisim", UNISIM_ROOT)
 
 lib = VU.add_library("EggNet", vhdl_standard="08")
 
@@ -75,7 +76,7 @@ tb_vpool.set_sim_option('ghdl.sim_flags', [f'--vcd={ROOT / "tmp" / "tb_vpool.vcd
 # -- Setup Compile Options
 # --------------------------
 
-VU.set_compile_option("ghdl.a_flags", ["--ieee=synopsys"])
+VU.set_compile_option("ghdl.flags", ["--ieee=synopsys"])
 # for ghdl wavefrom use ["--wave=output.ghw"]
 # VU.set_sim_option("ghdl.sim_flags", ["--vcd=output.vcd"], allow_empty=True)
 # VU.set_sim_option("ghdl.elab_run", ["--vcd=output.vcd", "-frelaxed", "-frelaxed-rules"], allow_empty=True)

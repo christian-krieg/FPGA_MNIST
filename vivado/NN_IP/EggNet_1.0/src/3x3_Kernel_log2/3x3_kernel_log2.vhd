@@ -10,7 +10,7 @@ LIBRARY work;
 use work.egg_box.all;
 
 
-entity Kernel3x3_log2 is
+entity kernel3x3_log2 is
 	port(
     -- Clock Reset
 		Clk_i : in STD_LOGIC;
@@ -31,9 +31,9 @@ entity Kernel3x3_log2 is
     -- Master data
 		M_Y_data_o : out std_logic_vector(ACTIVATION_WIDTH-1 downto 0) -- Quantization after each Kernel 
 	);
-end Kernel3x3_log2;
+end kernel3x3_log2;
 
-architecture Behavioral of Kernel3x3_log2 is
+architecture Behavioral of kernel3x3_log2 is
 
 constant EXTRA_BIT : integer := 3; 
 

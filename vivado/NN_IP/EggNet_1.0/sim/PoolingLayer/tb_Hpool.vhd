@@ -15,7 +15,7 @@ entity tb_hpool is
         N_CHANNELS            : natural := 4;
         TB_PERIOD             : time    := 10 ns
     );
-end entity tb_Hpool;
+end entity tb_hpool;
 
 architecture rtl of tb_hpool is
 
