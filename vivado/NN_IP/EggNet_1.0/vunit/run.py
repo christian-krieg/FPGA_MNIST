@@ -111,16 +111,16 @@ lib.add_source_files(SRC_ROOT / "ShiftRegister" / "*.vhd")
 # --------------------------
 
 # Find all testbenches ins path or search for a specific testbench
-TEST_PATH = pathlib.Path(args.testpath)
-assert(TEST_PATH.is_dir(), "Testpath must be a directory")
-if args.testbench == "all":
-    testbenches = sorted(TEST_PATH.rglob('tb_*.py'))
-    assert(len(testbenches)>0,"No testbenches found in {}".format(TEST_PATH))
-else:    
-    testbenches = sorted(TEST_PATH.rglob(args.testbench))
-    assert(len(testbenches)>0,"Testbenches {}".format(args.testbench) + "not found in path {}".format(args.testpath))
+if __name__ == "__main__":
+    TEST_PATH = pathlib.Path(args.testpath)
+    assert TEST_PATH.is_dir(), "Testpath must be a directory"
+    if args.testbench == "all":
+        testbenches = sorted(TEST_PATH.rglob('tb_*.py'))
+        assert len(testbenches)>0,"No testbenches found in {}".format(TEST_PATH)
+    else:    
+        testbenches = sorted(TEST_PATH.rglob(args.testbench))
+        assert len(testbenches)>0,"Testbenches {}".format(args.testbench) + "not found in path {}".format(args.testpath)
         
-import importlib
 import importlib.util
 
 # -------------------------- 

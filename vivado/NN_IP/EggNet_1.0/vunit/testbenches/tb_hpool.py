@@ -17,11 +17,9 @@ Inherits:
     Super_Simulator
 """
 
-import os
 import pathlib
 from vunit import VUnit
 
-import EggNet
 from simulator import Simulator
 
 import importlib.util
@@ -32,7 +30,7 @@ class Testbench(Simulator):
        super().__init__(vunit, libname, root_path,pathlib.Path(__file__),testbench_name=testbench_name,vcd=vcd,synopsys=synopsys)
         
     def generate_testdata(self):
-        print(__file__ + " INFO: Test data is generated in vhdl testbench")
+        print(pathlib.Path(__file__).name  + " INFO: Test data is generated in vhdl testbench")
         pass        
     
     def execute(self):

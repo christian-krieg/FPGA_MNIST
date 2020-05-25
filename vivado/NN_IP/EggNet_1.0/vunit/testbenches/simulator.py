@@ -40,8 +40,9 @@ class Simulator:
 
         if testbench_name == None:
             testbench_name = child.stem
-            
-        print("Using: " + testbench_name + ".vhd")
+        print("---------------------------------------------------------------")    
+        print("VHDL Testbench: " + testbench_name + ".vhd")
+        print("---------------------------------------------------------------")
         # -- Add vhdl testbench --
         self.lib.add_source_files(self.LOCAL_ROOT / (testbench_name + ".vhd"))
         self.TB = self.lib.test_bench(testbench_name) # 
