@@ -8,8 +8,12 @@ import os
 import pathlib
 from vunit import VUnit
 import getpass
+import EggNet
+import EggNet.Reader
 
 TESTBENCH = "tb_conv_channel"
+
+
 
 class Simulator:
     def __init__(self, vunit: VUnit, libname:str, root_path:pathlib.Path):
@@ -31,7 +35,8 @@ class Simulator:
         # TODO: Testdata generation 
         
     def generate_testdata():
-        pass        
+        mnist = EggNet.Reader.MNIST(folder_path='/tmp/mnist/')
+        test_images = mnist.test_images()
     
     def execute(self):
         print("Execute simulation")
