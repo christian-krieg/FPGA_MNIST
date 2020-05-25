@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """
+Super class for Simulator plugin of testbenches 
+===============================================
+
+
 Created on Mon May 25 11:24:45 2020
 
 @author: lukas
 
-Super class for Simulator plugin of testbenches 
 
 Dependencies:
     vunit
@@ -24,23 +27,23 @@ import EggNet.Reader
 import numpy2json2vhdl as np2vhdl
 
 
-class Super_Simulator:
-    def __init__(self, vunit: VUnit, libname:str, root_path:pathlib.Path, testbench_name = None, vcd = False, synopsys = False):
+class Simulator:
+    def __init__(self, vunit: VUnit, libname:str, root_path:pathlib.Path, child:pathlib.Path, testbench_name = None, vcd = False, synopsys = False):
         # -- Set up Vunit --
         self.VU = vunit; # VUNIT class 
         self.lib = vunit.library(libname)
         
         # -- Set up workspace -- 
-        self.LOCAL_ROOT = pathlib.Path(__file__).parent
+        self.LOCAL_ROOT = child.parent
         self.ROOT = root_path
         os.makedirs(self.ROOT / "tmp", exist_ok=True)
-        file_name = os.path.basename(__file__)
-        vdhl_test_bench_file_name = file_name.split('.')[0] # VHDL and Python testbench have to be the same 
+
         if testbench_name == None:
-            testbench_name = vdhl_test_bench_file_name
-        
+            testbench_name = child.stem
+            
+        print("Using: " + testbench_name + ".vhd")
         # -- Add vhdl testbench --
-        self.lib.add_source_files(self.LOCAL_ROOT / vdhl_test_bench_file_name + ".vhd")
+        self.lib.add_source_files(self.LOCAL_ROOT / (testbench_name + ".vhd"))
         self.TB = self.lib.test_bench(testbench_name) # 
         
         # -- Set compile options --

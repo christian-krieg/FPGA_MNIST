@@ -1,6 +1,6 @@
 """
 Numpy to json to VHDL
--------------
+=====================
 
 Provides functions for transferring 2d or 3d numpy arrays to a vhdl testbench. 
 The data is transferred using the JSON interface provided by vunit. 

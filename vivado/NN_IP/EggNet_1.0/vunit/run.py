@@ -25,13 +25,12 @@ import getpass
 # ---------------------------
 
 ROOT = pathlib.Path(__file__).parent
-SRC_ROOT = pathlib.Path(__file__).parent / 'src'
-SIM_ROOT = pathlib.Path(__file__).parent / 'sim'
+SRC_ROOT = pathlib.Path(__file__).parent.parent / 'src'
 
 
 
 
-if sys.platform == "Windows":
+if sys.platform == "Windows" or "win32":
     DEFAULT_UNISIM_ROOT = pathlib.WindowsPath("C:/msys64/mingw64/lib/ghdl/vendors/xilinx-vivado/unisim/v08")
 else:
     # DEFAULT_UNISIM_ROOT = pathlib.Path("/usr/local/lib/ghdl/vendors/xilinx-vivado/unisim/v08")
@@ -50,16 +49,23 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("--testpath", default="./testbenches", nargs="+", type=str, metavar="testpath", 
                     help="Specify the path that should be scanned for testbenches")
+parser.add_argument("-t", "--testbench", default="all", nargs="+" , type=str, metavar="testbench",
+                    help="Speify the used testbench. Use \'all\' to use all testbenches in testpath")
 parser.add_argument("-r", "--recursive", default=True, 
                     help="Enable recursive test search and execution of the provided test path")
 parser.add_argument("--unisim", default=DEFAULT_UNISIM_ROOT, type=str, metavar="unisim_path", 
                     help="The path of the compiled unisim package")
 parser.add_argument("-g", "--gui", action="store_true",
                     help="Launch the graphical user interface (coming soon!)")
+parser.add_argument("--vcd", action="store_true", dest='vcd',
+                    help="Enable vcd waveform file output")
+parser.add_argument("--synopsys", action="store_true",dest='synopsys',
+                    help="Use synopsys library in ghdl")
 args = parser.parse_args()
 
 if pathlib.Path(args.unisim).exists() == False:
-    raise Exception("You need to provide a path for pre-compiled `unisim` in VHDL2008 standard to compile the lib (see ghdl doc)")
+    #raise Exception("You need to provide a path for pre-compiled `unisim` in VHDL2008 standard to compile the lib (see ghdl doc)")
+    args.unisim = DEFAULT_UNISIM_ROOT
 
 if args.gui == True:
     print("GUI is not ready yet, continuing in command line mode")
@@ -101,58 +107,36 @@ lib.add_source_files(SRC_ROOT / "ShiftRegister" / "*.vhd")
 
 
 # -------------------------- 
-# -- Setup Testbenches
+# -- Search for Testbenches
 # --------------------------
 
-# Find all Testbench.py files
+# Find all testbenches ins path or search for a specific testbench
 TEST_PATH = pathlib.Path(args.testpath)
 assert(TEST_PATH.is_dir(), "Testpath must be a directory")
-
+if args.testbench == "all":
+    testbenches = sorted(TEST_PATH.rglob('tb_*.py'))
+    assert(len(testbenches)>0,"No testbenches found in {}".format(TEST_PATH))
+else:    
+    testbenches = sorted(TEST_PATH.rglob(args.testbench))
+    assert(len(testbenches)>0,"Testbenches {}".format(args.testbench) + "not found in path {}".format(args.testpath))
+        
 import importlib
 import importlib.util
 
-testbenches = [filename for filename in os.listdir(TEST_PATH) if filename.startswith("tb_") and filename.endswith(".py")]
-
-testbench_paths = SIM_ROOT.rglob('testbench.py')
-for bench_path in testbench_paths:
-    print(bench_path)
-    _bench_spec = importlib.util.spec_from_file_location(name="testbench.py",location=bench_path)
-    _bench_module = importlib.util.module_from_spec(spec=_bench_spec)
-    _bench_spec.loader.exec_module(_bench_module)
-
-    # Append the files and tests to the VU object
-    Simulator = _bench_module.Simulator(vunit=VU, libname="EggNet",root_path=ROOT)
-
-
-# -- Setup Generics
-# VU.set_generic("DATA_WIDTH", 3)
-#lib.add_source_files(SIM_ROOT / "PoolingLayer" / "*.vhd")
-
-#tb_hpool = lib.test_bench('tb_hpool')
-#tb_hpool.set_sim_option('ghdl.sim_flags', [f'--vcd={ROOT / "tmp" / "tb_hpool.vcd"}'])
-
-#tb_vpool = lib.test_bench('tb_vpool')
-#tb_vpool.set_sim_option('ghdl.sim_flags', [f'--vcd={ROOT / "tmp" / "tb_vpool.vcd"}'])
-
-# This create a GHDL BUG -> not sure why
-# lib.add_source_files(SIM_ROOT / "ReluLayer" / "*.vhd")
-# tb_relu = lib.test_bench('tb_relu')
-# tb_relu.set_sim_option('ghdl.sim_flags', [f'--vcd={ROOT / "tmp" / "tb_relu.vcd"}'])
-
-#tb_vpool.set_sim_option('ghdl.elab_flags', [f'--vcd="{ROOT / "tmp" / "tb_vpool.vcd"}"'])
-
 # -------------------------- 
-# -- Setup Compile Options
+# -- Setup Testbenches
 # --------------------------
-
-VU.set_compile_option("ghdl.flags", ["--ieee=synopsys"])
-# for ghdl wavefrom use ["--wave=output.ghw"]
-# VU.set_sim_option("ghdl.sim_flags", ["--vcd=output.vcd"], allow_empty=True)
-# VU.set_sim_option("ghdl.elab_run", ["--vcd=output.vcd", "-frelaxed", "-frelaxed-rules"], allow_empty=True)
-# wave = gtkw.GTKWSave('output.vcd') # Not working yet
+def run_test(tests):
+    for testbench in tests:
+        spec = importlib.util.spec_from_file_location(testbench.stem,testbench)
+        test_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(test_module)
+        test = test_module.Testbench(VU,"EggNet",ROOT,vcd=args.vcd,synopsys=args.synopsys)
+        test.generate_testdata()
+        test.execute()
 
 
 
 if __name__ == "__main__":
-    VU.main()
+    run_test(testbenches)
 
