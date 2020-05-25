@@ -132,7 +132,7 @@ def run_test(tests):
         test_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(test_module)
         test = test_module.Testbench(VU,"EggNet",ROOT,vcd=args.vcd,synopsys=args.synopsys)
-        test.generate_testdata()
+        test.load_testdata()
         test.execute()
 
 
