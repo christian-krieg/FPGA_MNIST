@@ -6,6 +6,10 @@ In particular interest for this project are the `ghdl` docker images, e.g. the G
 
 ## Basic Commands
 
+**UPDATE**: The commands have changed and need to be invoked from the root project direcotry (so `FPGA_MNIST/`) in order to add the python dependecies (`EggNet` and `EggNetExtenstion`) properly.
+This can be hustle, therefore the usage of VS Code in combination with the `Remote - Container` package
+is recommended.
+
 To build the image use the command
 
 ```shell script
@@ -15,7 +19,7 @@ docker build -t eggnet/vhdl path/to/dockerfile
 All commands should be run from a terminal:
 
 ```shell script
-docker run --rm -it -v $(pwd):/vivado_src ghdl/ext:latest /bin/bash
+docker run --rm -it -v $(pwd):/eggnet/src eggnet/vhdl:latest 
 ```
 
 This command does the following

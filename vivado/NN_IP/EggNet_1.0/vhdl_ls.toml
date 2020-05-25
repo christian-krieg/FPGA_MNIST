@@ -2,9 +2,26 @@
 # vhdl_ls.toml file and supports glob-style patterns.
 #
 # Taken from: https://github.com/Bochlin/rust_hdl_vscode
+#
+# Another good example is: https://github.com/kraigher/rust_hdl/tree/master/example_project
+#
+
 
 [libraries]
 lib.files = [
   'src/**/*.vhd',
   'sim/**/*.vhd'
+]
+
+vunit_lib.files = [
+  '/usr/local/lib/python3.8/site-packages/vunit_hdl-4.4.1rc0-py3.8.egg/vunit/**/*.vhd',
+  '/usr/local/lib/python3.8/site-packages/vunit_hdl-4.4.1rc0-py3.8.egg/vunit/**/*.vhdl'
+]
+
+JSON.files = [
+  '/usr/local/lib/python3.8/site-packages/vunit_hdl-4.4.1rc0-py3.8.egg/vunit/vhdl/JSON-for-VHDL/src/*.vhdl'
+]
+
+UNISIM.files = [
+  './lib/unisim-src/*.vhd'
 ]

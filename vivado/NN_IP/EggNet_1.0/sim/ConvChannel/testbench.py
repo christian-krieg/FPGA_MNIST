@@ -12,20 +12,21 @@ import getpass
 TESTBENCH = "tb_conv_channel"
 
 class Simulator:
-    def __init__(self, vunit: VUnit, libname:str):
+    def __init__(self, vunit: VUnit, libname:str, root_path:pathlib.Path):
         # -- Set up Vunit --- 
         self.VU = vunit; # VUNIT class 
         self.lib = vunit.library(libname)
         
         # -- Set up workspace -- 
         LOCAL_ROOT = pathlib.Path(__file__).parent
+        ROOT = root_path
         
         # -- Add testbench and all vhdl files in sim folder --
         self.lib.add_source_files(LOCAL_ROOT /"*.vhd")
         self.TB = self.lib.test_bench(TESTBENCH) # 
         
         # -- Set compile options 
-        self.TB.set_sim_option('ghdl.sim_flags', [f'--vcd={ROOT / "tmp" / TESTBENCH + ".vcd"}'])
+        self.TB.set_sim_option('ghdl.sim_flags', [f'--vcd={ROOT / "tmp" / (TESTBENCH + ".vcd")}'])
         self.VU.set_compile_option("ghdl.flags", ["--ieee=synopsys"])
         # TODO: Testdata generation 
         

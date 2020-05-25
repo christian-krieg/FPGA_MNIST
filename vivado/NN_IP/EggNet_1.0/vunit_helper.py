@@ -147,6 +147,8 @@ def generate_tests(obj, signs, data_widths):
             post_check=make_post_check(data_width, sign),
         )
 
+def init_eggnet() : egg.FpiLeNet
+    return egg.FpiLeNet.init_npz(npz_path=WEIGH)
 
 if __name__ == "__main__":
 

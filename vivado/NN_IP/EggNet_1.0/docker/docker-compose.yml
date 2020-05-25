@@ -2,8 +2,10 @@ version: "3"
 
 services:
   ghdl:
-    image: ghdl/ext:latest
-    command: sh -c "pip install -r requirements.txt && python -m server"
+    image: eggnet/vhd
+    # command: sh -c "pip install -r requirements.txt && python -m server"
+    context: 
+      - working_dir
     environment:
       - PORT=9000
       - FLASK_ENV=development
