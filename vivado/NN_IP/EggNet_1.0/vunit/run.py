@@ -48,18 +48,18 @@ else:
 parser = argparse.ArgumentParser(
     description="This script invokes the build of the Eggnet VHDL files using VUNIT and GHDL"
 )
-parser.add_argument("--testpath", default="./sim", nargs="+", type=str, metavar="testpath", 
-                    help="Specify the path that should be scanned for tests")
+parser.add_argument("--testpath", default="./testbenches", nargs="+", type=str, metavar="testpath", 
+                    help="Specify the path that should be scanned for testbenches")
 parser.add_argument("-r", "--recursive", default=True, 
                     help="Enable recursive test search and execution of the provided test path")
 parser.add_argument("--unisim", default=DEFAULT_UNISIM_ROOT, type=str, metavar="unisim_path", 
                     help="The path of the compiled unisim package")
 parser.add_argument("-g", "--gui", action="store_true",
-                    help="Launch the graphical user interface")
+                    help="Launch the graphical user interface (coming soon!)")
 args = parser.parse_args()
 
 if pathlib.Path(args.unisim).exists() == False:
-    raise Exception("You need to provide an path for `unisim` in VHDL2008 standard to compile the lib")
+    raise Exception("You need to provide a path for pre-compiled `unisim` in VHDL2008 standard to compile the lib (see ghdl doc)")
 
 if args.gui == True:
     print("GUI is not ready yet, continuing in command line mode")
@@ -110,6 +110,8 @@ assert(TEST_PATH.is_dir(), "Testpath must be a directory")
 
 import importlib
 import importlib.util
+
+testbenches = [filename for filename in os.listdir(TEST_PATH) if filename.startswith("tb_") and filename.endswith(".py")]
 
 testbench_paths = SIM_ROOT.rglob('testbench.py')
 for bench_path in testbench_paths:
