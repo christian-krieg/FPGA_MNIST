@@ -1,0 +1,18 @@
+{
+  "Name": "EggNet",
+  "Version": 0.1,
+  "Bit widths": {
+    "Activation bit width": 8,
+    "Bit width of weight shifts": 3,
+    "Bias bit width": 9,
+    "Bit width of kernel fraction shifts": 2,
+    "Bit width of channel fraction shifts": 3
+  },
+  "Fractions" : {
+    "Input Fraction" : 8,
+    "Layer 1 kernel output fraction" : 9,
+    "Layer 1 layer output fraction" : 11,
+    "Layer 2 kernel output fraction" : 11,
+    "Layer 2 layer output fraction" : 14
+  }
+}
