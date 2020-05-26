@@ -20,12 +20,12 @@ Inherits:
 import pathlib
 from vunit import VUnit
 
-from simulator import Simulator
+import EggNet.VunitExtension as EggUnit
 
 import importlib.util
 
 
-class Testbench(Simulator):
+class Testbench(EggUnit.Simulator):
     def __init__(self, vunit: VUnit, libname:str, root_path:pathlib.Path, testbench_name = None, vcd = False, synopsys = False):
        super().__init__(vunit, libname, root_path,pathlib.Path(__file__),testbench_name=testbench_name,vcd=vcd,synopsys=synopsys)
         
@@ -37,6 +37,10 @@ class Testbench(Simulator):
         super().execute()
         
 #%% For direct usage 
+class Namespace:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
 if __name__ == "__main__":
     
     # -- Import run.py 
@@ -45,6 +49,11 @@ if __name__ == "__main__":
     spec = importlib.util.spec_from_file_location(RUN_PATH.stem,RUN_PATH)
     simulation = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(simulation)
-    simulation.run_test([pathlib.Path(__file__)])
-    
+    args = Namespace(testpath=pathlib.Path(__file__).parent, testbench=[pathlib.Path(__file__).stem], vcd=False,synopsys=False)  
+    parser = simulation.create_parser()
+    args = parser.parse_args(args=['-t', 'tb_hpool', '--testpath',str(pathlib.Path(__file__).parent.absolute())])
+    VU = simulation.init_vunit(args)
+    simulation.run_test(VU,args)  
+    VU.main()
     # -- use run.py with 
+    
