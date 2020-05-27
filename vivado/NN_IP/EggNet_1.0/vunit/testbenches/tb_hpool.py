@@ -42,13 +42,14 @@ if __name__ == "__main__":
     # -- Import run.py 
     ROOT = pathlib.Path(__file__).parents[1]
     RUN_PATH = ROOT / "run.py"
+    SRC_ROOT = ROOT.parent / 'src'
     spec = importlib.util.spec_from_file_location(RUN_PATH.stem,RUN_PATH)
-    simulation = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(simulation)
-    parser = simulation.create_parser()
-    args = parser.parse_args(args=['-t', pathlib.Path(__file__).stem, '--testpath',str(pathlib.Path(__file__).parent.absolute())])
-    VU = simulation.init_vunit(args)
-    simulation.run_test(VU,args)  
-    VU.main()
-    # -- use run.py with 
+    run_py = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(run_py)
+    
+    # -- Setup arguments 
+    args = ['-t', pathlib.Path(__file__).stem, '--testpath',str(pathlib.Path(__file__).parent.absolute())]
+    # -- Initialze vunit 
+    runner = run_py.VU_Run(ROOT,SRC_ROOT,args)
+    runner.run_test()
     

@@ -67,7 +67,7 @@ class Simulator:
         if synopsys == True:
             self.VU.set_compile_option("ghdl.flags", ["--ieee=synopsys"])
             
-    def use_rand_image(self, image_nbr, randseed=None, MNIST_PATH: pathlib.Path = pathlib.Path(__file__).parents[5] / "data" / "MNIST"):
+    def _use_rand_image(self, image_nbr, randseed=None, MNIST_PATH: pathlib.Path = pathlib.Path(__file__).parents[5] / "data" / "MNIST"):
         mnist = EggNet.Reader.MNIST(folder_path=str(MNIST_PATH))
         test_images = mnist.test_images()
 
