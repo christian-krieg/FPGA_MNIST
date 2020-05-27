@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Testbench for Simulator plugin of run.py 
+Testbench for vertical pooling module
 ========================================
 
 
@@ -10,7 +10,6 @@ Created on Sun May 24 15:42:31 2020
 
 Dependencies:
     vunit
-    numpy
     EggNet
     
 Inherits:
@@ -20,12 +19,12 @@ Inherits:
 import pathlib
 from vunit import VUnit
 
-from simulator import Simulator
+import EggNet.VunitExtension as EggUnit
 
 import importlib.util
 
 
-class Testbench(Simulator):
+class Testbench(EggUnit.Simulator):
     def __init__(self, vunit: VUnit, libname:str, root_path:pathlib.Path, testbench_name = None, vcd = False, synopsys = False):
        super().__init__(vunit, libname, root_path,pathlib.Path(__file__),testbench_name=testbench_name,vcd=vcd,synopsys=synopsys)
         
@@ -45,6 +44,10 @@ if __name__ == "__main__":
     spec = importlib.util.spec_from_file_location(RUN_PATH.stem,RUN_PATH)
     simulation = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(simulation)
-    simulation.run_test([pathlib.Path(__file__)])
-    
+    parser = simulation.create_parser()
+    args = parser.parse_args(args=['-t', pathlib.Path(__file__).stem, '--testpath',str(pathlib.Path(__file__).parent.absolute())])
+    VU = simulation.init_vunit(args)
+    simulation.run_test(VU,args)  
+    VU.main()
     # -- use run.py with 
+    

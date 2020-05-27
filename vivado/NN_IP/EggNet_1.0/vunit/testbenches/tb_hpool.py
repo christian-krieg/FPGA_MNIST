@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Testbench for Simulator plugin of run.py 
+Testbench for horizontal pooling module
 ========================================
 
 
@@ -37,10 +37,6 @@ class Testbench(EggUnit.Simulator):
         super().execute()
         
 #%% For direct usage 
-class Namespace:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
 if __name__ == "__main__":
     
     # -- Import run.py 
@@ -49,9 +45,8 @@ if __name__ == "__main__":
     spec = importlib.util.spec_from_file_location(RUN_PATH.stem,RUN_PATH)
     simulation = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(simulation)
-    args = Namespace(testpath=pathlib.Path(__file__).parent, testbench=[pathlib.Path(__file__).stem], vcd=False,synopsys=False)  
     parser = simulation.create_parser()
-    args = parser.parse_args(args=['-t', 'tb_hpool', '--testpath',str(pathlib.Path(__file__).parent.absolute())])
+    args = parser.parse_args(args=['-t', pathlib.Path(__file__).stem, '--testpath',str(pathlib.Path(__file__).parent.absolute())])
     VU = simulation.init_vunit(args)
     simulation.run_test(VU,args)  
     VU.main()
