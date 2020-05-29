@@ -85,7 +85,7 @@ def dump_json(array,JSON_PATH):
     dumped = json.dumps({'dim' : list(np.shape(array)),'data' : array.ravel()}, cls=NumpyEncoder)
     with open(str(JSON_PATH), 'w+', encoding='utf-8') as f:
         f.write(dumped) 
-        
+        f.close()
 
 def setup_vunit(VU,TB,JSON_PATH):
     """
@@ -111,6 +111,7 @@ def setup_vunit(VU,TB,JSON_PATH):
     TB_CFG["dump_debug_data"] = False
     JSON_STR = encode_json(TB_CFG)
     
-    TB.get_tests("stringified*")[0].set_generic("tb_cfg", JSON_STR)
+    TB.get_tests("*")[0].set_generic("tb_cfg", JSON_STR)
     TB.get_tests("JSON file*")[0].set_generic("tb_cfg", JSON_PATH)
+    #TB.get_tests("JSON file*")[0].set_generic("tb_cfg", JSON_PATH)
 
