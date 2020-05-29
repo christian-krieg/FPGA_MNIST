@@ -21,6 +21,12 @@ class VU_Run(EggUnit.VU_Runner):
         
     def _init_vunit(self):
         super()._init_vunit()
+        # -------------------------------
+        # -- Possible future feaature 
+        # -- Read source paths from
+        # -- a Json file
+        #--------------------------------
+        
         print(self.SRC_ROOT / "AXI_Stream_Master" / "*.vhd")
         self.lib.add_source_files(self.SRC_ROOT / "AXI_Stream_Master" / "*.vhd")
         self.lib.add_source_files(self.SRC_ROOT / "AXI-lite" / "*.vhd")

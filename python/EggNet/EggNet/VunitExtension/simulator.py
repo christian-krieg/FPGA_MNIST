@@ -54,20 +54,21 @@ class Simulator:
         # -- Add vhdl testbench --
         self.lib.add_source_files(self.LOCAL_ROOT / (testbench_name + ".vhd"))
         self.TB = self.lib.test_bench(testbench_name)
+        #try: self.TB = self.lib.test_bench(testbench_name)
+        #except: Exception(AttributeError,"Testbench not found. Check if vhdl file \
+        #                  exists and entity name fits to file name")
 
-        # -- Set compile options --
-
+        # -- Set compile options --  
         self.vcd_enabled = vcd
         self.synopsys_enabled = synopsys
-
         if vcd == True:
             self.TB.set_sim_option(
                 'ghdl.sim_flags', [f'--vcd={self.ROOT / "tmp" / (testbench_name + ".vcd")}'])
 
         if synopsys == True:
-            self.VU.set_compile_option("ghdl.flags", ["--ieee=synopsys"])
+            self.VU.set_compile_option("ghdl.a_flags", ["--ieee=synopsys"])
             
-    def _use_rand_image(self, image_nbr, randseed=None, MNIST_PATH: pathlib.Path = pathlib.Path(__file__).parents[5] / "data" / "MNIST"):
+    def _use_rand_images(self, image_nbr, randseed=None, MNIST_PATH: pathlib.Path = pathlib.Path(__file__).parents[5] / "data" / "MNIST"):
         mnist = EggNet.Reader.MNIST(folder_path=str(MNIST_PATH))
         test_images = mnist.test_images()
 
@@ -80,13 +81,14 @@ class Simulator:
         
         return np_array
     
-    def load_testdata(self, np_array=None):
+    def load_testdata(self, np_array=None, filename="testdata.csv"):
         # if no spezial numpy array is defined use a single random test image
-        if np_array == None:
+        if np_array is None:
             np_array = self.use_rand_image(1)
             
-        EggUnit.dump_json(np_array, self.ROOT / "tmp")
-        EggUnit.setup_vunit(self.VU, self.TB, self.ROOT / "tmp")
+        CSV_PATH = self.ROOT / "tmp" / filename
+        EggUnit.dump_csv(np_array, CSV_PATH)
+        EggUnit.setup_vunit_for_csv(self.VU,self.TB, CSV_PATH)
 
     def execute(self):
         print("Execute simulation")
