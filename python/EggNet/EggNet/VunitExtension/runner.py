@@ -124,7 +124,7 @@ class VU_Runner():
         """
         # --- Create a tmp dir
         os.makedirs(self.ROOT / "tmp", exist_ok=True)
-        vunit_args = ['--output-path','./tmp']
+        vunit_args = ['--output-path','./tmp','--verbose']
         
         if self.args.compile_only:
             vunit_args.append('--compile')
