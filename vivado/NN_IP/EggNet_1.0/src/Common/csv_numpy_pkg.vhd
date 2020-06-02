@@ -18,6 +18,9 @@ package csv_numpy is
   impure function csvGetNumpy5d(filepath : string) return int_vec_5d_t;
   impure function csvGetNumpyDim(filepath : string) return integer_vector;
   
+  procedure  print2d(arr: int_vec_2d_t); 
+  procedure  print3d(arr: int_vec_3d_t); 
+  procedure  print4d(arr: int_vec_4d_t); 
   procedure  print5d(arr: int_vec_5d_t); 
   
 end package csv_numpy;

@@ -39,7 +39,8 @@ class Testbench(EggUnit.Simulator):
         #test = np.arange(45,dtype=np.uint8)
         #test = test.reshape([5,3,3])
         #super().load_testdata(test,"testdata.csv") 
-        super().load_testdata(kernels[:,:,:,:,:,0],"testdata.csv")       
+        super().load_testdata(kernels[:,:,:,:,:,0],"testdata.csv","TB_CSV_DATA_FILE")    
+        super().load_testdata(images,"resultdata.csv","TB_CSV_RESULTS_FILE")    
     
     def execute(self):
         super().execute()

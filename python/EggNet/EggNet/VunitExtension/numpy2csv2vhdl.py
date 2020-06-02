@@ -70,7 +70,7 @@ def dump_csv(array,CSV_PATH):
     csv = np.append(csv,array.ravel())
     csv.tofile(CSV_PATH,sep=',',format='%d')
 
-def setup_vunit_for_csv(VU:VUnit,TB:TestBench,CSV_PATH:pathlib.Path):
+def setup_vunit_for_csv(VU:VUnit,TB:TestBench,CSV_DATA_PATH:pathlib.Path,generic_name="TB_CSV_DATA_FILE"):
     """
     
 
@@ -79,19 +79,19 @@ def setup_vunit_for_csv(VU:VUnit,TB:TestBench,CSV_PATH:pathlib.Path):
     VU : VUNIT class
         Public interface of vunit.
     TB : Testbench
-        Testbench which uses the numpy array .
-    JSON_PATH : Path
-        Path to json file including file name 
-    file_name : TYPE, optional
-        DESCRIPTION. The default is "data.json".
+        Testbench which uses the numpy array.
+    CSV_DATA_PATH : pathlib.Path
+        Path to csv data file including file name. 
+    generic_name : string, optional
+        Name of CSV path generic in vhdl testbench. 
+        The default is "TB_CSV_DATA_FILE"
 
     Returns
     -------
     None.
 
     """
-    TB_CSV_FILE = str(CSV_PATH)
-    TB.set_generic('TB_CSV_FILE',TB_CSV_FILE)
-    #VU.set_sim_option("ghdl.sim_flags", ["--stack-max-size=128m"])
-    #TB.get_tests("JSON file*")[0].set_generic("tb_cfg", JSON_PATH)
+    TB_CSV_DATA_FILE = str(CSV_DATA_PATH)
+    TB.set_generic(generic_name,TB_CSV_DATA_FILE)
+    
 
