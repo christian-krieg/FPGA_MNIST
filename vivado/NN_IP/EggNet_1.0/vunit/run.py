@@ -27,7 +27,6 @@ class VU_Run(EggUnit.VU_Runner):
         # -- a Json file
         #--------------------------------
         
-        print(self.SRC_ROOT / "AXI_Stream_Master" / "*.vhd")
         self.lib.add_source_files(self.SRC_ROOT / "AXI_Stream_Master" / "*.vhd")
         self.lib.add_source_files(self.SRC_ROOT / "AXI-lite" / "*.vhd")
         self.lib.add_source_files(self.SRC_ROOT / "bram_vhdl" / "*.vhd")
@@ -50,11 +49,9 @@ if __name__ == "__main__":
     # -- Setup Constants
     # ---------------------------
     ROOT = pathlib.Path(__file__).parent
-    ROOT = ROOT.absolute()
-    SRC_ROOT = pathlib.Path(__file__).parents[1] / 'src'
-    SRC_ROOT = SRC_ROOT.absolute()
-    print(ROOT)
-    print(SRC_ROOT)
+    ROOT = ROOT.resolve()
+    SRC_ROOT = ROOT.parent / 'src'
+    SRC_ROOT = SRC_ROOT.resolve()
     
     # ---------------------------
     # -- Setup VU_Run and start simulation

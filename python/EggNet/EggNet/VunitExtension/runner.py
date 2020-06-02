@@ -74,6 +74,7 @@ class VU_Runner():
         --vcd : Enable vcd waveform file output
         --synopsys : Use synopsys library in ghdl
         --unisim-src : Unisim path points to source files, needs to be compiled
+        --version : Returns VUnit version 
         
         Example Usage:
             python run.py -r --testpath ./sim ./sim2 ./sim3 --unisim ./lib/unisim-debian-2019
@@ -87,8 +88,6 @@ class VU_Runner():
         parser = argparse.ArgumentParser(
             description="This script invokes the simulation of the Eggnet VHDL files using VUNIT and GHDL"
         )
-        parser.add_argument("--compile-only", action="store_true",
-                            help="Only compile the source files without running any testbenches")
         parser.add_argument("--testpath", default="./testbenches", type=str, metavar="testpath",
                             help="Specifies the path that should be scanned for testbenches")
         parser.add_argument("-t", "--testbench", default="all", nargs="+", type=str, metavar="testbench",
@@ -105,6 +104,20 @@ class VU_Runner():
                             help="Use synopsys library in ghdl")
         parser.add_argument("--unisim-src", action="store_true",
                         help="Unisim path points to source files, needs to be compiled")
+                        
+        # Arguments used in vunit                 
+        parser.add_argument("--version", action="store_true",
+                        help="Returns VUnit version")          
+        parser.add_argument("-f", "--files", action="store_true",
+                                help="Returns all files registered in vunit")    
+        parser.add_argument("-l", "--list", action="store_true",
+                                        help="Only list all files in compile order") 
+        parser.add_argument("-m", "--minimal", action="store_true",
+                                        help="Only compile files required for the (filtered) test benches")                                         
+        parser.add_argument("--compile", action="store_true",
+                            help="Only compile project without running tests")                                
+        parser.add_argument("--elaborate", action="store_true",
+                            help="Only elaborate test benches without running")                                 
         return parser
 
 # ---------------------------
@@ -122,13 +135,24 @@ class VU_Runner():
             DESCRIPTION.
     
         """
+        # --- Return only Version number of VUnit
+        if self.args.version == True:
+            VU = VUnit.from_argv(['--version'])
+            return 
         # --- Create a tmp dir
         os.makedirs(self.ROOT / "tmp", exist_ok=True)
         vunit_args = ['--output-path','./tmp','--verbose']
         
-        if self.args.compile_only:
-            vunit_args.append('--compile')
-            
+        if self.args.compile:
+            vunit_args.append('--compile')        
+        if self.args.elaborate:
+            vunit_args.append('--elaborate')
+        if self.args.files:
+            vunit_args.append('--files')         
+        if self.args.list:
+            vunit_args.append('--list')        
+        if self.args.list:
+            vunit_args.append('--minimal')    
         # --- Setup VUNIT
         self.VU = VUnit.from_argv(vunit_args)
         
