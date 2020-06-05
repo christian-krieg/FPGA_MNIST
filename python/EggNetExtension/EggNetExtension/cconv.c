@@ -26,6 +26,9 @@ int conv2d_3x3_shift(const int* __restrict data_in,
                      const int        kin_ch_s,
                      const int        kout_ch_s,
                      const int        stride,
+                     const int        input_exponent,
+                     const int        kernel_out_exponent,
+                     const int        channel_out_exponent,
                      int* __restrict* pdata_out,
                      int*             pbatch_out,
                      int*             pout_h,
@@ -42,6 +45,8 @@ int conv2d_3x3_shift(const int* __restrict data_in,
     const int out_ch = kout_ch;
     const int fh2 = (int)((fh - 1) / 2);   // calculate the half filter heigth, odd filter size is assumed
     const int fw2 = (int)((fw - 1) / 2);   // calculate the half filter width, odd filter size is assumed
+    const int kernel_exp_shift = input_exponent-kernel_out_exponent; // example input Q8.8 output Q8.6 --> shift to the right by 2
+    const int channel_exp_shift = input_exponent-channel_out_exponent;
     int* data_out = NULL;
 
     // -- Debug Infos
@@ -78,7 +83,7 @@ int conv2d_3x3_shift(const int* __restrict data_in,
     PTR_CHECK(pout_ch);
 
     // -- Allocate memory
-    CREATE_4D_ARRAY(int, data_out, batch_out, out_h, out_w, out_ch);
+    CREATE_4D_ARRAY(uint8_t, data_out, batch_out, out_h, out_w, out_ch);
 
     *pdata_out = data_out;
     *pbatch_out = batch_out;
@@ -97,41 +102,43 @@ int conv2d_3x3_shift(const int* __restrict data_in,
             // Calculate the individual output kernel
             for (int i = 0; i < in_h; i += stride) {
                 for (int j = 0; j < in_w; j += stride) {
-                    int accum = 0;
-
+                    int channel_accum = 0;
                     // TODO This could be faster, if no if() statements would be handled inside the loops
 
                     // Sum up over the patch and convolve it
-                    for (int di = 0; di < fh; di++) {
-                        for (int dj = 0; dj < fw; dj++) {
-                            int ix = i + di - fh2;
-                            int jx = j + dj - fw2;
+                    for (int q = 0; q < kin_ch; q++) {
+                        int kernel_accum = 0;
+                        for (int di = 0; di < fh; di++) {
+                            for (int dj = 0; dj < fw; dj++) {
+                                int ix = i + di - fh2;
+                                int jx = j + dj - fw2;
+                                
 
-                            const int patch_h_start = MAX(0, i - fh2);         // goes from -1...26
-                            const int patch_h_end = MIN(in_h, i - fh2 + fw);   // goes from  2...29
-                            const int patch_w_start = MAX(0, j - fw2);         // goes from -1...26
-                            const int patch_w_end = MIN(in_w, j - fw2 + fw);   // goes from  2...29
+                                const int patch_h_start = MAX(0, i - fh2);         // goes from -1...26
+                                const int patch_h_end = MIN(in_h, i - fh2 + fw);   // goes from  2...29
+                                const int patch_w_start = MAX(0, j - fw2);         // goes from -1...26
+                                const int patch_w_end = MIN(in_w, j - fw2 + fw);   // goes from  2...29
 
-
-                            if (!((ix >= 0 && ix < in_h) && (jx >= 0 && jx < in_h))) {
-                                // skip computation, zero padding
-                                continue;
-                            }
-                            for (int q = 0; q < kin_ch; q++) {
-                                // accum += array_in[b][ix][jx][q] * kernel_in[di][dj][q][k];
-
-                                // Shift
-                                int _temp_val = DATA_IN(b, ix, jx, q) >> KERNEL_S(di, dj, q, k);
-
-                                // Check for the sign
-                                if (KERNEL_SGN(di, dj, q, k) == 0) { accum += _temp_val; }
-                                else {
-                                    accum -= _temp_val;
+                                if (!((ix >= 0 && ix < in_h) && (jx >= 0 && jx < in_h))) {
+                                    // skip computation, zero padding
+                                    continue;
                                 }
-                            }
+                                    // accum += array_in[b][ix][jx][q] * kernel_in[di][dj][q][k];
+
+                                    // Shift
+                                    uint8_t _temp_val = DATA_IN(b, ix, jx, q) >> KERNEL_S(di, dj, q, k);
+
+                                    // Check for the sign
+                                    if (KERNEL_SGN(di, dj, q, k) == 0) { kernel_accum += _temp_val; }
+                                    else {
+                                        kernel_accum -= _temp_val;
+                                    }
+                            } 
                         }
+                        channel_accum += ((kernel_accum >> kernel_exp_shift) & 0xFF);
                     }
-                    DATA_OUT(b, i, j, k) = accum;
+                    channel_accum = ((channel_accum >> channel_exp_shift) & 0xFF); // & 0xFF könnte wegen datentyp umwandlung in der nächsten zeile weggelassen werden
+                    DATA_OUT(b, i, j, k) = (uint8_t) channel_accum;
                     // array_out[b][i][j][k] = accum;
                 }
             }
