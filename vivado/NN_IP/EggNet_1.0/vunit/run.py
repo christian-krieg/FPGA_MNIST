@@ -31,13 +31,14 @@ class VU_Run(EggUnit.VU_Runner):
         self.lib.add_source_files(self.SRC_ROOT / "AXI-lite" / "*.vhd")
         self.lib.add_source_files(self.SRC_ROOT / "bram_vhdl" / "*.vhd")
         self.lib.add_source_files(self.SRC_ROOT / "Common" / "*.vhd")
-        # self.lib.add_source_files(self.SRC_ROOT / "ConvLayer" / "*.vhd")
+        self.lib.add_source_files(self.SRC_ROOT / "Conv2d_log2" / "*.vhd")
+        self.lib.add_source_files(self.SRC_ROOT / "3x3_Kernel_log2" / "*.vhd")
         # self.lib.add_source_files(self.SRC_ROOT / "DenseLayer" / "*.vhd")
-        self.lib.add_source_files(self.SRC_ROOT / "MemCtrl" / "*.vhd")
-        self.lib.add_source_files(self.SRC_ROOT / "MemCtrl_Conv_to_Dense" / "*.vhd")
+        #self.lib.add_source_files(self.SRC_ROOT / "MemCtrl" / "*.vhd")
+        #self.lib.add_source_files(self.SRC_ROOT / "MemCtrl_Conv_to_Dense" / "*.vhd")
         self.lib.add_source_files(self.SRC_ROOT / "PoolingLayer" / "*.vhd")
         self.lib.add_source_files(self.SRC_ROOT / "ReluLayer" / "*.vhd")
-        self.lib.add_source_files(self.SRC_ROOT / "ShiftRegister" / "*.vhd")
+        #self.lib.add_source_files(self.SRC_ROOT / "ShiftRegister" / "*.vhd")
         # self.lib.add_source_files(self.SRC_ROOT / "TopLevel" / "*.vhd")
         return self.VU       
     def run_test(self):
