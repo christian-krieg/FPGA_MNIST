@@ -146,8 +146,8 @@ error:
     *pdata_out = NULL;
     *pbatch_out = 0;
     *pout_ch = 0;
-    *pout_h=0;
-    *pout_w=0;
+    *pout_h = 0;
+    *pout_w = 0;
     return return_value;
 }
 
@@ -590,3 +590,134 @@ new_conv_protofunc_definition(uint8_t);
 new_conv_protofunc_definition(uint16_t);
 new_conv_protofunc_definition(uint32_t);
 new_conv_protofunc_definition(uint64_t);
+
+
+#define new_conv_shift_protofunc_definition(dtype)                                                      \
+    int conv2d_shift_##dtype(const dtype* __restrict data_in, const int batch, const int in_h,          \
+                             const int in_w, const int in_ch, const uint32_t* __restrict kernel_shift,  \
+                             const int fh, const int fw, const int kin_ch, const int kout_ch,           \
+                             const uint8_t* __restrict kernel_sign, const int fh_s,                     \
+                             const int fw_s, const int kin_ch_s, const int kout_ch_s,                   \
+                             const int stride, dtype* __restrict* pdata_out, int* pbatch_out,           \
+                             int* pout_h, int* pout_w, int* pout_ch)                                    \
+    {                                                                                                   \
+        int return_value = 0;                                                                           \
+                                                                                                        \
+                                                                                                        \
+        const int batch_out = batch;                                                                    \
+        const int out_h = in_h;                                                                         \
+        const int out_w = in_w;                                                                         \
+        const int out_ch = kout_ch;                                                                     \
+        const int fh2 = (int)((fh - 1) / 2); /* calculate the half filter heigth, odd filter size is assumed*/                                                                                           \
+        const int fw2 = (int)((fw - 1) / 2); /* calculate the half filter width, odd filter size is assumed*/                                                                                           \
+        int*      data_out = NULL;                                                                      \
+                                                                                                        \
+        /* -- Debug Infos*/                                                                             \
+        debug("data_in     = [%d, %d, %d, %d]", batch, in_h, in_w, in_ch);                              \
+        debug("kernel      = [%d, %d, %d, %d]", fh, fw, kin_ch, kout_ch);                               \
+        debug("kernel sgn  = [%d, %d, %d, %d]", fh_s, fw_s, kin_ch_s, kout_ch_s);                       \
+        debug("data_out    = [%d, %d, %d, %d]", batch_out, out_h, out_w, out_ch);                       \
+                                                                                                        \
+        /* ----- Input Checking & Error Handling --- */                                                 \
+        CHECK(kin_ch == in_ch,                                                                          \
+              "Dimension mismatch, number of input channels must be equal to number "                   \
+              "of input filter weights");                                                               \
+                                                                                                        \
+        CHECK_AND_SET(fh == fh_s, return_value, NNE_ERROR_DIMENSION_MISMATCH,                           \
+                      "Inconsistent dimensions for 'fh' and 'fh_s'");                                   \
+        CHECK_AND_SET(fw == fw_s, return_value, NNE_ERROR_DIMENSION_MISMATCH,                           \
+                      "Inconsistent dimensions for 'fh' and 'fh_s'");                                   \
+        CHECK_AND_SET(kin_ch == kin_ch_s, return_value, NNE_ERROR_DIMENSION_MISMATCH,                   \
+                      "Inconsistent dimensions for 'fh' and 'fh_s'");                                   \
+        CHECK_AND_SET(kout_ch == kout_ch_s, return_value, NNE_ERROR_DIMENSION_MISMATCH,                 \
+                      "Inconsistent dimensions for 'kout_ch' and 'kout_ch_s'");                         \
+                                                                                                        \
+        /* Check if the filter has an uneven width */                                                   \
+        CHECK_AND_SET(1 == fh % 2, return_value, NNE_ERROR_OTHER,                                       \
+                      "Only odd numbers for filter size are supported. Input filter height is %d", fh); \
+        CHECK_AND_SET(1 == fw % 2, return_value, NNE_ERROR_OTHER,                                       \
+                      "Only odd numbers for filter size are supported. Input filter width is %d", fw);  \
+                                                                                                        \
+                                                                                                        \
+        /* Check if input pointer are valid */                                                          \
+        PTR_CHECK(pdata_out);                                                                           \
+        PTR_CHECK(pbatch_out);                                                                          \
+        PTR_CHECK(pout_h);                                                                              \
+        PTR_CHECK(pout_w);                                                                              \
+        PTR_CHECK(pout_ch);                                                                             \
+                                                                                                        \
+        /* -- Allocate memory ---*/                                                                     \
+        CREATE_4D_ARRAY(dtype, data_out, batch_out, out_h, out_w, out_ch);                              \
+                                                                                                        \
+        *pdata_out = data_out;                                                                          \
+        *pbatch_out = batch_out;                                                                        \
+        *pout_h = out_h;                                                                                \
+        *pout_w = out_w;                                                                                \
+        *pout_ch = out_ch;                                                                              \
+                                                                                                        \
+        /*--------------------------------*/                                                            \
+        /* -- Main Logic ---               */                                                           \
+        /* --------------------------------*/                                                           \
+                                                                                                        \
+        for (int b = 0; b < batch; b++) {                                                               \
+            for (int k = 0; k < kout_ch; k++) {                                                         \
+                /* Calculate the individual output kernel */                                            \
+                for (int i = 0; i < in_h; i += stride) {                                                \
+                    for (int j = 0; j < in_w; j += stride) {                                            \
+                        dtype accum = 0;                                                                \
+                                                                                                        \
+                                                                                                        \
+                        /* Sum up over the patch and convolve it */                                     \
+                        for (int di = 0; di < fh; di++) {                                               \
+                            for (int dj = 0; dj < fw; dj++) {                                           \
+                                int ix = i + di - fh2;                                                  \
+                                int jx = j + dj - fw2;                                                  \
+                                                                                                        \
+                                const int patch_h_start = MAX(0, i - fh2);                              \
+                                const int patch_h_end = MIN(in_h, i - fh2 + fw);                        \
+                                const int patch_w_start = MAX(0, j - fw2);                              \
+                                const int patch_w_end = MIN(in_w, j - fw2 + fw);                        \
+                                                                                                        \
+                                                                                                        \
+                                if (!((ix >= 0 && ix < in_h) && (jx >= 0 && jx < in_h))) {              \
+                                    /* skip computation, zero padding */                                \
+                                    continue;                                                           \
+                                }                                                                       \
+                                for (int q = 0; q < kin_ch; q++) {                                      \
+                                    /* Shift */                                                         \
+                                    int _temp_val = DATA_IN(b, ix, jx, q) >> KERNEL_S(di, dj, q, k);    \
+                                                                                                        \
+                                    /* Check for the sign */                                            \
+                                    if (KERNEL_SGN(di, dj, q, k) == 0) { accum += _temp_val; }          \
+                                    else {                                                              \
+                                        accum -= _temp_val;                                             \
+                                    }                                                                   \
+                                }                                                                       \
+                            }                                                                           \
+                        }                                                                               \
+                        DATA_OUT(b, i, j, k) = accum;                                                   \
+                    }                                                                                   \
+                }                                                                                       \
+            }                                                                                           \
+        }                                                                                               \
+        return return_value;                                                                            \
+                                                                                                        \
+    error:                                                                                              \
+        free(data_out);                                                                                 \
+        *pdata_out = NULL;                                                                              \
+        *pbatch_out = 0;                                                                                \
+        *pout_ch = 0;                                                                                   \
+        *pout_h = 0;                                                                                    \
+        *pout_w = 0;                                                                                    \
+        return return_value;                                                                            \
+    }
+
+
+new_conv_shift_protofunc_definition(int8_t);
+new_conv_shift_protofunc_definition(int16_t);
+new_conv_shift_protofunc_definition(int32_t);
+new_conv_shift_protofunc_definition(int64_t);
+new_conv_shift_protofunc_definition(uint8_t);
+new_conv_shift_protofunc_definition(uint16_t);
+new_conv_shift_protofunc_definition(uint32_t);
+new_conv_shift_protofunc_definition(uint64_t);
