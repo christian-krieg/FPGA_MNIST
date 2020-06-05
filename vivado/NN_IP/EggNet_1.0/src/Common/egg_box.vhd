@@ -25,6 +25,8 @@ package egg_box is
   type kernel_shift_array_t is array (0 to KERNEL_SIZE - 1) of std_logic_vector(WEIGHT_SHIFT_BIT_WIDTH - 1 downto 0);
   type kernel_input_array_t is array (0 to KERNEL_SIZE - 1) of std_logic_vector(ACTIVATION_WIDTH - 1 downto 0);
   type kernel_weighted_X_array_t is array (0 to KERNEL_SIZE - 1) of std_logic_vector(ACTIVATION_WIDTH downto 0);
+  type channel_input_array_t is array (NATURAL range <>) of kernel_input_array_t;
+  type channel_output_array_t is array (NATURAL range <>) of std_logic_vector(ACTIVATION_WIDTH-1 downto 0);
 
   type kernel_activations_array2d_t is array(0 to FILTER_HEIGHT, 0 to FILTER_WIDTH) of std_logic_vector(WEIGHT_SHIFT_BIT_WIDTH -1 downto 0);
   type kernel_sign_array2d_t is array (0 to FILTER_HEIGHT, 0 to FILTER_WIDTH) of std_logic_vector(0 downto 0);
