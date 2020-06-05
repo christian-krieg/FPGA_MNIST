@@ -3,18 +3,18 @@ use IEEE.STD_LOGIC_1164.ALL;
 use ieee.numeric_std.all ;
 
 Library UNISIM;
+use UNISIM.all;
 use UNISIM.vcomponents.all;
 
 entity quantized_adder is
     generic(
            INPUT_WIDTH : integer range 1 to 32 := 12; 
            OUTPUT_WIDTH : integer range 1 to 32 := 9;
-           FRACTION_SHIFT_WIDTH : integer := 2); 
+           FRAC_SHIFT : in integer); 
     Port ( Clk_i : in STD_LOGIC;
            Ready_i : in STD_LOGIC;
            A_i : in STD_LOGIC_VECTOR (INPUT_WIDTH-1 downto 0);
            B_i : in STD_LOGIC_VECTOR (INPUT_WIDTH-1 downto 0);
-           Frac_shift_i : in STD_LOGIC_VECTOR(FRACTION_SHIFT_WIDTH-1 downto 0);
            S_o : out STD_LOGIC_VECTOR (OUTPUT_WIDTH-1 downto 0));
 end quantized_adder;
 
@@ -24,44 +24,11 @@ architecture Behavioral of quantized_adder is
   signal sum : std_logic_vector(((INPUT_WIDTH-1)/4)*4+4 downto 0) := (others => '0'); 
   signal a_sig : std_logic_vector(((INPUT_WIDTH-1)/4)*4+3 downto 0) := (others => '0'); 
   signal a_xor_b : std_logic_vector(((INPUT_WIDTH-1)/4)*4+3 downto 0) := (others => '0'); 
-  signal sum_R, sum_RR, shift : std_logic_vector(INPUT_WIDTH-1 downto 0) := (others => '0'); 
+  signal sum_R : std_logic_vector(INPUT_WIDTH-1 downto 0) := (others => '0'); 
+  signal shift,sum_RR :std_logic_vector(OUTPUT_WIDTH-1 downto 0) := (others => '0'); 
   signal overflow_neg, overflow_neg_R : std_logic := '0';
   signal overflow_pos_R, overflow_pos_RR : std_logic := '0';
   signal overflow_pos : std_logic := '0';  
-
-  component CARRY4 is
-    port (
-    CO : out std_logic_vector(3 downto 0); -- 4-bit carry out
-    O : out std_logic_vector(3 downto 0); -- 4-bit carry chain XOR data out
-    CI : in std_ulogic; -- 1-bit carry cascade input
-    CYINIT : in std_ulogic; -- 1-bit carry initialization
-    DI : in std_logic_vector(3 downto 0); -- 4-bit carry-MUX data in
-    S : in std_logic_vector(3 downto 0) -- 4-bit carry-MUX select input
-    );
-  end component;
-
-  component FDRE is
-    Generic(
-    INIT : bit);
-    port (
-    Q  : out std_ulogic;
-    C  : in std_ulogic;
-    CE : in std_ulogic;
-    R  : in std_ulogic;
-    D  : in  std_ulogic 
-  ) ;
-  end component;  
-  component FDSE is
-    Generic(
-    INIT : bit);
-    port (
-    Q  : out std_ulogic;
-    C  : in std_ulogic;
-    CE : in std_ulogic;
-    S  : in std_ulogic;
-    D  : in  std_ulogic 
-  ) ;
-  end component;
   
 begin
 
@@ -69,7 +36,7 @@ a_sig(INPUT_WIDTH-1 downto 0) <= A_i;
 a_xor_b(INPUT_WIDTH-1 downto 0) <= A_i xor B_i; 
 carry(0) <= '0';
 CARRY_chain: for i in 0 to (INPUT_WIDTH-1)/4 generate
-  CARRY4_inst : CARRY4
+  CARRY4_inst : entity unisim.CARRY4
   port map (
     CO => carry(4*i+3+1 downto 4*i+1), -- 4-bit carry out
     O => sum(4*i+3 downto 4*i), -- 4-bit carry chain XOR data out
@@ -80,8 +47,8 @@ CARRY_chain: for i in 0 to (INPUT_WIDTH-1)/4 generate
   );
 end generate;
 
-RegSum: for i in 0 to OUTPUT_WIDTH-1 generate
-  FDRE_inst : FDRE
+RegSum: for i in 0 to INPUT_WIDTH-1 generate
+  FDRE_inst : entity unisim.FDRE
     generic map(
       INIT => '0')
     port map (
@@ -93,15 +60,36 @@ RegSum: for i in 0 to OUTPUT_WIDTH-1 generate
   );
 end generate;
 
-overflow_pos <= '1' when carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "01" or (sum(INPUT_WIDTH-1) = '0' and sum(INPUT_WIDTH-2 downto OUTPUT_WIDTH-1) /= (sum(INPUT_WIDTH-1 downto OUTPUT_WIDTH)'range => '0')) else '0';
-overflow_neg <= '1' when carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "10" or (sum(INPUT_WIDTH-1) = '1' and sum(INPUT_WIDTH-2 downto OUTPUT_WIDTH-1) /= (sum(INPUT_WIDTH-1 downto OUTPUT_WIDTH-1)'range => '1')) else '0';
-
-Quantization: process(sum) is
+-- ***** Overflow detection and Quantization ******* 
+-- Overflow can occur if 
+--  - Overflow in Carry chain is detected 
+--  - Sum_R exeeds the maximum value define by the fraction shift. IF fraction shift is 0 only an overflow in the carry chain can be occur 
+Shift_ReLU: if FRAC_SHIFT > 0 generate
+ReLU: process(sum_R,carry) is 
 begin
-  shift <= std_logic_vector(SHIFT_RIGHT(signed(sum_R), to_integer(unsigned(Frac_shift_i))));
-end process; 
+  if carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "01" or (sum_R(sum_R'left) = '0' and sum_R(sum_R'left-1 downto sum_R'left-FRAC_SHIFT) /= (sum_R(sum_R'left-1 downto sum_R'left-FRAC_SHIFT)'range => '0')) then
+    overflow_pos <= '1';
+  end if;
+  if carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "10" or (sum_R(sum_R'left) = '1' and sum_R(sum_R'left-1 downto sum_R'left-FRAC_SHIFT) /= (sum_R(sum_R'left-1 downto sum_R'left-FRAC_SHIFT)'range => '1')) then
+    overflow_neg <= '1';
+  end if;
+  shift <= sum_R(sum_R'left - FRAC_SHIFT downto sum_R'length - FRAC_SHIFT - OUTPUT_WIDTH);
+end process;  
+end generate;
+Quant_ReLU: if FRAC_SHIFT = 0 generate
+ReLU: process(sum_R,carry) is 
+begin
+  if carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "01" then
+    overflow_pos <= '1';
+  end if;
+  if carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "10" then
+    overflow_neg <= '1';
+  end if;
+  shift <= sum_R(sum_R'left downto sum_R'length - OUTPUT_WIDTH);
+end process;  
+end generate;
 
-FDRE_ov_neg_R : FDRE
+FDRE_ov_neg_R : entity unisim.FDRE
   generic map(
     INIT => '0')
   port map (
@@ -111,9 +99,8 @@ FDRE_ov_neg_R : FDRE
   R => '0', -- Synchronous reset input
   D => overflow_neg-- Data input
 );
-
 NegOverflow: for i in 0 to OUTPUT_WIDTH-2 generate
-  FDRE_inst : FDRE
+  FDRE_inst : entity unisim.FDRE
     generic map(
       INIT => '0')
     port map (
@@ -125,7 +112,7 @@ NegOverflow: for i in 0 to OUTPUT_WIDTH-2 generate
   );
 end generate;
 
-FDSE_sign : FDSE
+FDSE_sign : entity unisim.FDSE
   generic map(
     INIT => '0')
   port map (
@@ -136,7 +123,7 @@ FDSE_sign : FDSE
   D => shift(OUTPUT_WIDTH-1) -- Data input
 );
 
-FDRE_ov_pos_R : FDRE
+FDRE_ov_pos_R : entity unisim.FDRE
   generic map(
     INIT => '0')
   port map (
@@ -147,7 +134,7 @@ FDRE_ov_pos_R : FDRE
   D => overflow_pos-- Data input
 );
 
-FDRE_ov_pos_RR : FDRE
+FDRE_ov_pos_RR : entity unisim.FDRE
   generic map(
     INIT => '0')
   port map (
@@ -159,7 +146,7 @@ FDRE_ov_pos_RR : FDRE
 );
 
 PosOverflow: for i in 0 to OUTPUT_WIDTH-2 generate
-  FDSE_inst : FDSE
+  FDSE_inst : entity unisim.FDSE
     generic map(
       INIT => '0')  
     port map (
@@ -171,7 +158,7 @@ PosOverflow: for i in 0 to OUTPUT_WIDTH-2 generate
   );
 end generate;
 
-FDRE_sign : FDRE
+FDRE_sign : entity unisim.FDRE
   generic map(
     INIT => '0')
   port map (

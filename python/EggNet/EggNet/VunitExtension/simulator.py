@@ -62,6 +62,8 @@ class Simulator:
         #                  exists and entity name fits to file name")
 
         # -- Set compile options --  
+        self.VU.set_compile_option("ghdl.a_flags", ["-frelaxed","--ieee=synopsys"])
+        self.VU.set_sim_option("ghdl.elab_flags", ["-frelaxed"])
         self.vcd_enabled = vcd
         self.synopsys_enabled = synopsys
         if vcd == True:

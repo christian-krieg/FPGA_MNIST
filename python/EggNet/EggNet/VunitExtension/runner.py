@@ -137,11 +137,11 @@ class VU_Runner():
         """
         # --- Return only Version number of VUnit
         if self.args.version == True:
-            VU = VUnit.from_argv(['--version'])
+            self.VU = VUnit.from_argv(['--version'])
             return 
         # --- Create a tmp dir
         os.makedirs(self.ROOT / "tmp", exist_ok=True)
-        vunit_args = ['--output-path','./tmp','--verbose']
+        vunit_args = ['--output-path','./tmp','--verbose','--gui']
         
         if self.args.compile:
             vunit_args.append('--compile')        

@@ -18,10 +18,13 @@ package csv_numpy is
   impure function csvGetNumpy5d(filepath : string) return int_vec_5d_t;
   impure function csvGetNumpyDim(filepath : string) return integer_vector;
   
-  procedure  print2d(arr: int_vec_2d_t); 
-  procedure  print3d(arr: int_vec_3d_t); 
-  procedure  print4d(arr: int_vec_4d_t); 
-  procedure  print5d(arr: int_vec_5d_t); 
+  procedure print2d(arr: int_vec_2d_t); 
+  procedure print3d(arr: int_vec_3d_t); 
+  procedure print4d(arr: int_vec_4d_t); 
+  procedure print5d(arr: int_vec_5d_t); 
+  procedure printDim(dim: integer_vector);
+  
+  function iterate(i : integer;lim_low : integer;lim_high : integer) return integer;
   
 end package csv_numpy;
 
@@ -36,7 +39,6 @@ package body csv_numpy is
   begin   
     for i in 0 to dims-1 loop 
       dim(i) := get(arr, i+1);
-      info("Dimension: ["& integer'image(i) &"] " & integer'image(dim(i)));
     end loop;
     return dim;
   end;
@@ -121,7 +123,6 @@ package body csv_numpy is
     constant arr : integer_array_t := load_csv(filepath); 
     constant dim : integer_vector := getDimension(arr,get(arr, 0));
   begin
-    info("Dimensions: " & integer'image(get(arr, 0)));
     return csvGetNumpy2d_data(arr,dim);
   end;
   
@@ -129,7 +130,6 @@ package body csv_numpy is
     constant arr : integer_array_t := load_csv(filepath);
     constant dim : integer_vector := getDimension(arr,get(arr, 0));
   begin
-    info("Dimensions: " & integer'image(get(arr, 0)));
     return csvGetNumpy3d_data(arr,dim);
   end;
 
@@ -137,7 +137,6 @@ package body csv_numpy is
     constant arr : integer_array_t := load_csv(filepath);
     constant dim : integer_vector := getDimension(arr,get(arr, 0));
   begin
-    info("Dimensions: " & integer'image(get(arr, 0)));
     return csvGetNumpy4d_data(arr,dim);
   end;
   
@@ -145,7 +144,6 @@ package body csv_numpy is
     constant arr : integer_array_t := load_csv(filepath);
     constant dim : integer_vector := getDimension(arr,get(arr, 0));
   begin
-    info("Dimensions: " & integer'image(get(arr, 0)));
     return csvGetNumpy5d_data(arr,dim);
   end;
 
@@ -214,5 +212,26 @@ package body csv_numpy is
         end loop;        
       end loop;
     end loop;
+  end; 
+  
+  procedure printDim(dim: integer_vector) is
+    variable k_line : line;
+  begin
+    write(k_line, string'("Image dim: "));
+    for i in 0 to dim'length-1 loop
+      write(k_line, (string'("[") & integer'image(dim(i))) & string'("]"));
+    end loop;
+    writeline(output,k_line);
+  end; 
+  
+  function iterate(i : integer;lim_low : integer;lim_high : integer) return integer is 
+    variable iter : integer; 
+  begin
+    if i < lim_high then 
+      iter := i +1;
+    else 
+      iter:= lim_low;
+    end if;
+    return iter; 
   end; 
 end csv_numpy;

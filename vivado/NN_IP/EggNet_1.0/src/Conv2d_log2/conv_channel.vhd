@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use STD.textio.all;
+use ieee.math_real.log2;
+use ieee.math_real.ceil;
 LIBRARY work;
 use work.egg_box.all;
 use work.clogb2_Pkg.all;
@@ -24,11 +26,8 @@ entity Conv_channel is
 
     -- Slave interface --> connect to memory controller master
     S_Valid_i	    : in std_logic;
-    S_X_data_1_i  : in std_logic_vector((ACTIVATION_WIDTH*INPUT_CHANNEL_NUMBER) - 1 downto 0); --  Input vector element 1 |Vector: trans(1,2,3)
-    S_X_data_2_i  : in std_logic_vector((ACTIVATION_WIDTH*INPUT_CHANNEL_NUMBER) - 1 downto 0); --  Input vector element 2 |Vector: trans(1,2,3)
-    S_X_data_3_i  : in std_logic_vector((ACTIVATION_WIDTH*INPUT_CHANNEL_NUMBER) - 1 downto 0); --  Input vector element 3 |Vector: trans(1,2,3)
+    S_X_data_i    : in channel_input_array_t(INPUT_CHANNEL_NUMBER - 1 downto 0);
     S_Last_i      : in std_logic;
-    S_Newrow_i    : in std_logic;
     S_Ready_o     : out std_logic;
 
     -- Master interface --> connect to memory controller slave
@@ -45,7 +44,7 @@ architecture Behavioral of Conv_channel is
   type weight_sign_array_t is array (0 to INPUT_CHANNEL_NUMBER-1) of kernel_sign_array_t;
   type bias_array_t is array (0 to INPUT_CHANNEL_NUMBER-1) of std_logic_vector(BIAS_WIDTH-1 downto 0);
   type input_array_t is array (0 to INPUT_CHANNEL_NUMBER-1) of kernel_input_array_t;
-  type output_array_t is array (0 to INPUT_CHANNEL_NUMBER-1) of std_logic_vector(ACTIVATION_WIDTH-1 downto 0);
+  type output_array_t is array (0 to INPUT_CHANNEL_NUMBER-1) of std_logic_vector(ACTIVATION_WIDTH downto 0);
   
   impure function init_signs(mif_file_name : in STRING) return weight_sign_array_t is
     file mif_file : text open read_mode is mif_file_name;
@@ -93,15 +92,15 @@ architecture Behavioral of Conv_channel is
     return temp_mem;
   end function;  
   
-  impure function init_kernel_fraction(mif_file_name : in STRING) return std_logic_vector is
+  impure function init_kernel_fraction(mif_file_name : in STRING) return integer is
     file mif_file : text open read_mode is mif_file_name;
     variable mif_line : line;
     variable temp_bv : bit_vector(KERNEL_FRACTION_SHIFT_WIDTH - 1 downto 0);
-    variable temp_mem : std_logic_vector(KERNEL_FRACTION_SHIFT_WIDTH-1 downto 0);
+    variable temp_mem : integer;
   begin
     readline (mif_file, mif_line);
     read(mif_line, temp_bv);
-    temp_mem := to_stdlogicvector(temp_bv);
+    temp_mem :=  to_integer(unsigned(to_stdlogicvector(temp_bv)));
     return temp_mem;
   end function; 
   
@@ -120,79 +119,50 @@ architecture Behavioral of Conv_channel is
   
   
   constant SHIFTS_MIF_FILE_NAME : STRING := MIF_PATH & WEIGHT_MIF_PREAMBLE & "Shifts_L" & integer'image(LAYER_ID) & 
-                                            "_CO" & integer'image(OUTPUT_CHANNEL_ID);
+                                            "_CO_" & integer'image(OUTPUT_CHANNEL_ID) & ".mif";
   constant SIGN_MIF_FILE_NAME : STRING := MIF_PATH & WEIGHT_MIF_PREAMBLE & "Signs_L" & integer'image(LAYER_ID) & 
-                                            "_CO" & integer'image(OUTPUT_CHANNEL_ID);
-  constant BIAS_MIF_FILE_NAME : STRING := MIF_PATH & BIAS_MIF_PREAMBLE & "_L" & integer'image(LAYER_ID) & 
-                                            "_CO" & integer'image(OUTPUT_CHANNEL_ID);         
-  constant CH_FRAC_MIF_FILE_NAME : STRING := MIF_PATH & CH_FRAC_MIF_PREAMBLE & "_L" & integer'image(LAYER_ID) & 
-                                            "_CO" & integer'image(OUTPUT_CHANNEL_ID);       
-  constant K_FRAC_MIF_FILE_NAME : STRING := MIF_PATH & K_FRAC_MIF_PREAMBLE & "_L" & integer'image(LAYER_ID) & 
-                                            "_CO" & integer'image(OUTPUT_CHANNEL_ID);  
+                                            "_CO_" & integer'image(OUTPUT_CHANNEL_ID) & ".mif";
+  constant BIAS_MIF_FILE_NAME : STRING := MIF_PATH & BIAS_MIF_PREAMBLE & "L" & integer'image(LAYER_ID) & 
+                                            "_CO_" & integer'image(OUTPUT_CHANNEL_ID) & ".mif";         
+  constant CH_FRAC_MIF_FILE_NAME : STRING := MIF_PATH & CH_FRAC_MIF_PREAMBLE & "L" & integer'image(LAYER_ID) & ".mif";       
+  constant K_FRAC_MIF_FILE_NAME : STRING := MIF_PATH & K_FRAC_MIF_PREAMBLE & "L" & integer'image(LAYER_ID) & ".mif";  
 
 
   constant WEIGHT_SHIFTS          : weight_shift_array_t := init_shifts(SHIFTS_MIF_FILE_NAME);
   constant WEIGHT_SIGNS           : weight_sign_array_t  := init_signs(SIGN_MIF_FILE_NAME);
   constant BIASES                 : bias_array_t := init_bias(BIAS_MIF_FILE_NAME);
-  constant KERNEL_FRACTION_SHIFT  : std_logic_vector(KERNEL_FRACTION_SHIFT_WIDTH-1 downto 0) := init_kernel_fraction(K_FRAC_MIF_FILE_NAME);
+  constant KERNEL_FRACTION_SHIFT  : integer := init_kernel_fraction(K_FRAC_MIF_FILE_NAME);
   constant CHANNEL_FRACTION_SHIFT : integer := init_channel_fraction(CH_FRAC_MIF_FILE_NAME);
-  
-  
-  signal shiftreg_valid_out : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
-  signal shiftreg_last_out : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
-  signal shiftreg_is_ready_out : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
 
   signal input_kernels : input_array_t; 
   signal kernel_outputs : output_array_t; 
   signal kernel_last : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
   signal kernel_valid : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);  
   
-  constant ADDER_STAGES: integer := clogb2(INPUT_CHANNEL_NUMBER); 
+  constant ADDER_STAGES: integer := natural(ceil(log2(real(INPUT_CHANNEL_NUMBER)))); 
   --type adder_tree_array_t is array (natural range<>) of STD_LOGIC_VECTOR;
   --signal adder_out : adder_outputs(INPUT_CHANNEL_NUMBER-1 downto 0)(ACTIVATION_WIDTH+ADDER_STAGES-1 downto 0); 
-  signal adder_out : std_logic_vector(ACTIVATION_WIDTH+ADDER_STAGES-1 downto 0); 
+  signal adder_out : std_logic_vector(ACTIVATION_WIDTH+ADDER_STAGES downto 0); 
   signal adder_valid : std_logic;
   signal adder_last : std_logic;
   signal adder_ready : std_logic;
 begin
 
-  --------################# IN conv2d verschieben !!!! ###################################
-  --------||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-  --------VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-  Shiftregisters: for i in 0 to INPUT_CHANNEL_NUMBER-1 generate
-    Shiftregister: entity work.ShiftRegister_3x3
-      port map(
-        Clk_i       => Clk_i, 
-        nRst_i      => Rst_i, 
-        S_X_data_1_i => S_X_data_1_i((i+1)*ACTIVATION_WIDTH-1 downto i*ACTIVATION_WIDTH), 
-        S_X_data_2_i => S_X_data_1_i((i+1)*ACTIVATION_WIDTH-1 downto i*ACTIVATION_WIDTH), 
-        S_X_data_3_i => S_X_data_1_i((i+1)*ACTIVATION_WIDTH-1 downto i*ACTIVATION_WIDTH), 
-        S_Valid_i  => S_Valid_i,
-        S_Newrow_i => S_Newrow_i,
-        S_Last_i   => S_Last_i, 
-        S_Ready_o  => shiftreg_is_ready_out(i), 
-        M_X_data_o => input_kernels(i),
-        M_Valid_o  => shiftreg_valid_out(i),
-        M_Last_o   => shiftreg_last_out(i), 
-        M_Ready_i  => M_Ready_i
-      );    
-  end generate;
-  S_Ready_o <= shiftreg_is_ready_out(0);
-  --------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  --------||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-  --------################# IN conv2d verschieben !!!! ###################################
+  S_Ready_o <= M_Ready_i;
 
   Kernels: for i in 0 to INPUT_CHANNEL_NUMBER-1 generate
     Kernel: entity work.Kernel3x3_log2
+      generic map (
+        FRAC_SHIFT => KERNEL_FRACTION_SHIFT
+      )
       Port map( Clk_i => Clk_i,
                 Rst_i => Rst_i,
-                S_Valid_i => shiftreg_valid_out(0),
-                S_Last_i => shiftreg_last_out(0),
+                S_Valid_i => S_Valid_i,
+                S_Last_i => S_Last_i,
                 S_shift_i => WEIGHT_SHIFTS(i),
                 S_sign_i => WEIGHT_SIGNS(i), 
                 S_Bias_i => BIASES(i),
-                S_X_data_i => input_kernels(i),
-                S_Fraction_shift_i => KERNEL_FRACTION_SHIFT,
+                S_X_data_i => S_X_data_i(i),
                 M_Valid_o => kernel_valid(i),
                 M_Last_o => kernel_last(i),
                 M_Ready_i => M_Ready_i,
@@ -232,11 +202,11 @@ begin
           M_Last_o <= adder_last;
           M_valid_o <= adder_valid;
           if adder_out(adder_out'left) = '1' then
-              M_Y_data_o <= (others => '0');
+              M_Y_data_o <= (others => '0'); -- Set negative values to zero 
           elsif adder_out(adder_out'left downto adder_out'left-CHANNEL_FRACTION_SHIFT+1) /= (adder_out(adder_out'left downto adder_out'left-CHANNEL_FRACTION_SHIFT+1)'range => '0') then
               M_Y_data_o <= (others => '1');
           else
-              M_Y_data_o <= adder_out(adder_out'left-CHANNEL_FRACTION_SHIFT downto adder_out'left-CHANNEL_FRACTION_SHIFT-ACTIVATION_WIDTH);
+              M_Y_data_o <= adder_out(adder_out'left-CHANNEL_FRACTION_SHIFT-1 downto adder_out'left-CHANNEL_FRACTION_SHIFT-ACTIVATION_WIDTH); -- Cut off sign bit and shift
           end if;
         end if;  
       end if;
@@ -254,9 +224,9 @@ begin
           M_Last_o <= adder_last;
           M_valid_o <= adder_valid;
           if adder_out(adder_out'left) = '1' then
-              M_Y_data_o <= (others => '0');
+              M_Y_data_o <= (others => '0'); -- Set negative values to zero 
           else
-              M_Y_data_o <= adder_out(adder_out'left downto adder_out'left-ACTIVATION_WIDTH);
+              M_Y_data_o <= adder_out(adder_out'left-1 downto adder_out'left-ACTIVATION_WIDTH); -- Cut off sign bit 
           end if;
         end if;  
       end if;
