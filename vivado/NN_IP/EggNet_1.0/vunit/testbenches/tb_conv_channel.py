@@ -57,7 +57,7 @@ if __name__ == "__main__":
     spec.loader.exec_module(run_py)
     
     # -- Setup arguments 
-    args = ['-t', pathlib.Path(__file__).stem, '--testpath',str(pathlib.Path(__file__).parent.absolute())]
+    args = ['-t', pathlib.Path(__file__).stem, '--testpath',str(pathlib.Path(__file__).parent.absolute()), '--vcd']
     # -- Initialze vunit 
     runner = run_py.VU_Run(ROOT,SRC_ROOT,args)
     runner.run_test()
