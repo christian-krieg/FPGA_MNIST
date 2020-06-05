@@ -30,8 +30,7 @@ union bitfloat {
 };
 
 
-static inline float
-f_fast_relu(float x)
+static inline float f_fast_relu(float x)
 {
     union bitfloat co;
     co.value = x;
@@ -103,7 +102,7 @@ int relu4D(float* x, const int DIM1, const int DIM2, const int DIM3, const int D
 
 
 #define new_relu_protofunc_definition(dtype)                                                       \
-    int relu_##dtype##_inplace(dtype* x, int DIM1)                                           \
+    int relu_##dtype##_inplace(dtype* x, int DIM1)                                                 \
     {                                                                                              \
         const size_t N = DIM1;                                                                     \
         for (size_t i = 0; i < N; i++) { x[i] = F_RELU(x[i]); }                                    \
