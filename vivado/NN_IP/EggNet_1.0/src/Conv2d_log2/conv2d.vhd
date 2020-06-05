@@ -6,7 +6,7 @@ LIBRARY work;
 use work.egg_box.all;
 use work.clogb2_Pkg.all;
 
-entity Conv_channel is
+entity conv2d is
   Generic ( 
     LAYER_ID : integer := 0; -- ID of the Layer. Reuired for reading correct MIF files
     INPUT_CHANNEL_NUMBER : integer range 1 to 512 := 1; -- Number of input channels 
@@ -37,9 +37,9 @@ entity Conv_channel is
     M_Last_o      : out std_logic;
     M_Ready_i     : in std_logic
   );
-end Conv_channel;
+end conv2d;
 
-architecture Behavioral of Conv_channel is 
+architecture Behavioral of conv2d is 
   
   signal input_kernels : channel_input_array_t(INPUT_CHANNEL_NUMBER-1 downto 0);
   signal shiftreg_valid_out : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
