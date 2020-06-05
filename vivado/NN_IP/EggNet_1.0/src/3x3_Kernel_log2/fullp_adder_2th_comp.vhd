@@ -3,6 +3,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use ieee.numeric_std.all ;
 
 Library UNISIM;
+use UNISIM.all;
 use UNISIM.vcomponents.all;
 
 entity fullp_adder_2th_comp is
@@ -30,31 +31,7 @@ architecture Behavioral of fullp_adder_2th_comp is
   signal a_xor_b : std_logic_vector(((BIT_WIDTH-1)/4)*4+3 downto 0) := (others => '0'); 
   signal overflow_neg : std_logic := '0';
   signal overflow_pos_R : std_logic := '0';
-  signal overflow_pos : std_logic := '0';
-  
-  
-  component CARRY4 is
-    port (
-    CO : out std_logic_vector(3 downto 0); -- 4-bit carry out
-    O : out std_logic_vector(3 downto 0); -- 4-bit carry chain XOR data out
-    CI : in std_ulogic; -- 1-bit carry cascade input
-    CYINIT : in std_ulogic; -- 1-bit carry initialization
-    DI : in std_logic_vector(3 downto 0); -- 4-bit carry-MUX data in
-    S : in std_logic_vector(3 downto 0) -- 4-bit carry-MUX select input
-    );
-  end component;
-
-  component FDRE is
-    Generic(
-    INIT : bit);
-    port (
-    Q  : out std_ulogic;
-    C  : in std_ulogic;
-    CE : in std_ulogic;
-    R  : in std_ulogic;
-    D  : in  std_ulogic 
-  ) ;
-  end component;    
+  signal overflow_pos : std_logic := '0';  
   
 begin
 
@@ -62,7 +39,7 @@ a_sig(BIT_WIDTH-1 downto 0) <= A_i;
 a_xor_b(BIT_WIDTH-1 downto 0) <= A_i xor B_i; 
 carry(0) <= '0';
 CARRY_chain: for i in 0 to (BIT_WIDTH-1)/4 generate
-  CARRY4_inst : CARRY4
+  CARRY4_inst : entity unisim.CARRY4
   port map (
     CO => carry(4*i+3+1 downto 4*i+1), -- 4-bit carry out
     O => sum(4*i+3 downto 4*i), -- 4-bit carry chain XOR data out
@@ -75,7 +52,7 @@ end generate;
 sum_sig(BIT_WIDTH-1 downto 0) <= sum(BIT_WIDTH-1 downto 0); 
 sum_sig(BIT_WIDTH) <= carry(BIT_WIDTH) xor a_xor_b(BIT_WIDTH-1);
 OutputFF: for i in 0 to BIT_WIDTH generate
-  FDRE_inst : FDRE
+  FDRE_inst : entity unisim.FDRE
     generic map(
       INIT => '0')
     port map (
