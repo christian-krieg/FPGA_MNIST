@@ -116,7 +116,7 @@ First the python wrapper must be created using swig. Make sure `SWIG >4.0` is in
 terminal:
 
 ````shell script
-cd projeckt/Software/eggnet
+cd project/Software/eggnet
 swig -python eggnet.i
 ````
 
