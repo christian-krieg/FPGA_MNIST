@@ -104,10 +104,14 @@ class VU_Runner():
                             help="Use synopsys library in ghdl")
         parser.add_argument("--unisim-src", action="store_true",
                         help="Unisim path points to source files, needs to be compiled")
+        parser.add_argument("--gtkwave", action="store_true",
+                            help="Launches gtkwave after simulation") 
                         
         # Arguments used in vunit                 
         parser.add_argument("--version", action="store_true",
-                        help="Returns VUnit version")          
+                        help="Returns VUnit version")    
+        parser.add_argument("--verbose", action="store_true",
+                        help="Print test output immediately and not only when failure")  
         parser.add_argument("-f", "--files", action="store_true",
                                 help="Returns all files registered in vunit")    
         parser.add_argument("-l", "--list", action="store_true",
@@ -141,8 +145,12 @@ class VU_Runner():
             return 
         # --- Create a tmp dir
         os.makedirs(self.ROOT / "tmp", exist_ok=True)
-        vunit_args = ['--output-path','./tmp','--verbose','--gui']
+        vunit_args = ['--output-path','./tmp']
         
+        if self.args.gtkwave:
+            vunit_args.append('--gui')  
+        if self.args.verbose:
+            vunit_args.append('--verbose') 
         if self.args.compile:
             vunit_args.append('--compile')        
         if self.args.elaborate:

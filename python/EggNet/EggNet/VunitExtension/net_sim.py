@@ -138,21 +138,22 @@ def conv_2d(kernels, weights, msb):
     features = np.zeros((kernels.shape[0], kernels.shape[1], kernels.shape[2], weights.shape[0]), dtype=np.uint8)
     for i in range(kernels.shape[0]):
         for j in range(kernels.shape[1]):
-            for k in range(kernels.shape[1]):
+            for k in range(kernels.shape[2]):
                 for l in range(weights.shape[0]):
                     features[i, j, k, l] = conv_channel(kernels[i, j, k, :, :, :], weights[l, :, :, :], msb[l])
     return features
 
 
-def conv_channel(kernels, weights, msb):
+def conv_channel(kernels, shifts, signs, msb):
     """
     Emulates the operation carried out by the conv_channel module in the FPGA
 
     Parameters
     ----------
-    kernels : numpy array [B,W*H,Kh,Kw,Ci]
+    kernels : numpy array [B,W,H,Kh,Kw,Ci]
         B.. Batch size
-        W*H.. Image width times height
+        H.. Image height
+        W.. Image width 
         Kh.. Kernel height
         Kw.. Kernel width
         Ci.. channel number
