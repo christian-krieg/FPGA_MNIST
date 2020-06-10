@@ -67,91 +67,91 @@ class _SwigNonDynamicMeta(type):
 
 
 
-def relu_float_inplace(x):
+def relu_float_inplace(x: "float *") -> "int":
     return _EggNetExtension.relu_float_inplace(x)
 
-def relu_double_inplace(x):
+def relu_double_inplace(x: "double *") -> "int":
     return _EggNetExtension.relu_double_inplace(x)
 
-def relu_int8_t_inplace(x):
+def relu_int8_t_inplace(x: "int8_t *") -> "int":
     return _EggNetExtension.relu_int8_t_inplace(x)
 
-def relu_int16_t_inplace(x):
+def relu_int16_t_inplace(x: "int16_t *") -> "int":
     return _EggNetExtension.relu_int16_t_inplace(x)
 
-def relu_int32_t_inplace(x):
+def relu_int32_t_inplace(x: "int32_t *") -> "int":
     return _EggNetExtension.relu_int32_t_inplace(x)
 
-def relu_int64_t_inplace(x):
+def relu_int64_t_inplace(x: "int64_t *") -> "int":
     return _EggNetExtension.relu_int64_t_inplace(x)
 
-def relu_uint8_t_inplace(x):
+def relu_uint8_t_inplace(x: "uint8_t *") -> "int":
     return _EggNetExtension.relu_uint8_t_inplace(x)
 
-def relu_uint16_t_inplace(x):
+def relu_uint16_t_inplace(x: "uint16_t *") -> "int":
     return _EggNetExtension.relu_uint16_t_inplace(x)
 
-def relu_uint32_t_inplace(x):
+def relu_uint32_t_inplace(x: "uint32_t *") -> "int":
     return _EggNetExtension.relu_uint32_t_inplace(x)
 
-def relu_uint64_t_inplace(x):
+def relu_uint64_t_inplace(x: "uint64_t *") -> "int":
     return _EggNetExtension.relu_uint64_t_inplace(x)
 
-def conv2d_float(data_in, kernel, stride):
+def conv2d_float(data_in: "float const *", kernel: "float const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d_float(data_in, kernel, stride)
 
-def conv2d_double(data_in, kernel, stride):
+def conv2d_double(data_in: "double const *", kernel: "double const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d_double(data_in, kernel, stride)
 
-def conv2d_int8_t(data_in, kernel, stride):
+def conv2d_int8_t(data_in: "int8_t const *", kernel: "int8_t const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d_int8_t(data_in, kernel, stride)
 
-def conv2d_int16_t(data_in, kernel, stride):
+def conv2d_int16_t(data_in: "int16_t const *", kernel: "int16_t const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d_int16_t(data_in, kernel, stride)
 
-def conv2d_int32_t(data_in, kernel, stride):
+def conv2d_int32_t(data_in: "int32_t const *", kernel: "int32_t const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d_int32_t(data_in, kernel, stride)
 
-def conv2d_int64_t(data_in, kernel, stride):
+def conv2d_int64_t(data_in: "int64_t const *", kernel: "int64_t const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d_int64_t(data_in, kernel, stride)
 
-def conv2d_uint8_t(data_in, kernel, stride):
+def conv2d_uint8_t(data_in: "uint8_t const *", kernel: "uint8_t const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d_uint8_t(data_in, kernel, stride)
 
-def conv2d_uint16_t(data_in, kernel, stride):
+def conv2d_uint16_t(data_in: "uint16_t const *", kernel: "uint16_t const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d_uint16_t(data_in, kernel, stride)
 
-def conv2d_uint32_t(data_in, kernel, stride):
+def conv2d_uint32_t(data_in: "uint32_t const *", kernel: "uint32_t const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d_uint32_t(data_in, kernel, stride)
 
-def conv2d_uint64_t(data_in, kernel, stride):
+def conv2d_uint64_t(data_in: "uint64_t const *", kernel: "uint64_t const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d_uint64_t(data_in, kernel, stride)
 
-def NNE_print_error(code):
+def NNE_print_error(code: "int") -> "char const *":
     return _EggNetExtension.NNE_print_error(code)
 
-def conv2d(data_in, kernel, stride):
+def conv2d(data_in: "float const *", kernel: "float const *", stride: "int") -> "int *":
     return _EggNetExtension.conv2d(data_in, kernel, stride)
 
-def conv2d_3x3(data_in, kernel):
+def conv2d_3x3(data_in: "float const *", kernel: "float const *") -> "int *":
     return _EggNetExtension.conv2d_3x3(data_in, kernel)
 
-def conv2d_3x3_shift(data_in, batch, in_h, in_w, in_ch, kernel_shift, fh, fw, kin_ch, kout_ch, kernel_sign, fh_s, fw_s, kin_ch_s, kout_ch_s, bias, bin_ch, bout_ch, input_exponent, kernel_out_exponent, channel_out_exponent, stride, pdata_out, pbatch_out, pout_h, pout_w, pout_ch):
-    return _EggNetExtension.conv2d_3x3_shift(data_in, batch, in_h, in_w, in_ch, kernel_shift, fh, fw, kin_ch, kout_ch, kernel_sign, fh_s, fw_s, kin_ch_s, kout_ch_s, bias, bin_ch, bout_ch, input_exponent, kernel_out_exponent, channel_out_exponent, stride, pdata_out, pbatch_out, pout_h, pout_w, pout_ch)
+def conv2d_3x3_shift(data_in: "uint8_t const *", kernel_shift: "uint8_t const *", kernel_sign: "uint8_t const *", bias: "int16_t const *", input_exponent: "int", kernel_out_exponent: "int", channel_out_exponent: "int", stride: "int") -> "int *":
+    return _EggNetExtension.conv2d_3x3_shift(data_in, kernel_shift, kernel_sign, bias, input_exponent, kernel_out_exponent, channel_out_exponent, stride)
 
-def maxPool2D(data_in):
+def maxPool2D(data_in: "float const *") -> "int *":
     return _EggNetExtension.maxPool2D(data_in)
 
-def relu1D(x):
+def relu1D(x: "float *") -> "int":
     return _EggNetExtension.relu1D(x)
 
-def relu2D(x2):
+def relu2D(x2: "float *") -> "int":
     return _EggNetExtension.relu2D(x2)
 
-def relu3D(x3):
+def relu3D(x3: "float *") -> "int":
     return _EggNetExtension.relu3D(x3)
 
-def relu4D(x4):
+def relu4D(x4: "float *") -> "int":
     return _EggNetExtension.relu4D(x4)
 
 

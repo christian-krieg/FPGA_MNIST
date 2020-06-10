@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
-#include <math.h> 
+#include <math.h>
 
 #include "NNExtension.h"
 #include "dbg.h"
@@ -12,32 +12,32 @@
  *
  */
 int conv2d_3x3_shift(const uint8_t* __restrict data_in,
-                     const int batch,
-                     const int in_h,
-                     const int in_w,
-                     const int in_ch,
-                     const uint8_t* __restrict kernel,
-                     const int fh,
-                     const int fw,
-                     const int kin_ch,
-                     const int kout_ch,
+                     int batch,
+                     int in_h,
+                     int in_w,
+                     int in_ch,
+                     const uint8_t* __restrict kernel_shift,
+                     int fh,
+                     int fw,
+                     int kin_ch,
+                     int kout_ch,
                      const uint8_t* __restrict kernel_sign,
-                     const int        fh_s,
-                     const int        fw_s,
-                     const int        kin_ch_s,
-                     const int        kout_ch_s,
-                     const int16_t* __restrict bias, 
-                     const int        bin_ch,
-                     const int        bout_ch,
-                     const int        input_exponent,
-                     const int        kernel_out_exponent,
-                     const int        channel_out_exponent,
-                     const int        stride,
-                     int** __restrict pdata_out,
-                     int*             pbatch_out,
-                     int*             pout_h,
-                     int*             pout_w,
-                     int*             pout_ch)
+                     int fh_s,
+                     int fw_s,
+                     int kin_ch_s,
+                     int kout_ch_s,
+                     const int16_t* __restrict bias,
+                     int bin_ch,
+                     int bout_ch,
+                     int input_exponent,
+                     int kernel_out_exponent,
+                     int channel_out_exponent,
+                     int stride,
+                     uint8_t** __restrict pdata_out,
+                     int* pbatch_out,
+                     int* pout_h,
+                     int* pout_w,
+                     int* pout_ch)
 {
     int return_value = 0;
 
@@ -49,16 +49,16 @@ int conv2d_3x3_shift(const uint8_t* __restrict data_in,
     const int out_ch = kout_ch;
     const int fh2 = (int)((fh - 1) / 2);   // calculate the half filter heigth, odd filter size is assumed
     const int fw2 = (int)((fw - 1) / 2);   // calculate the half filter width, odd filter size is assumed
-    const int kernel_exp_shift = input_exponent-kernel_out_exponent; // example input Q8.8 output Q8.6 --> shift to the right by 2
-    const int channel_exp_shift = input_exponent-channel_out_exponent;
-    const int underflow_shift_limit = (-1)*pow(2,kernel_exp_shift)-1;
-    int* data_out = NULL;
+    const int kernel_exp_shift = input_exponent - kernel_out_exponent;   // example input Q8.8 output Q8.6 --> shift to the right by 2
+    const int channel_exp_shift = input_exponent - channel_out_exponent;
+    const int underflow_shift_limit = (-1) * pow(2, kernel_exp_shift) - 1;
+    int*      data_out = NULL;
 
     // -- Debug Infos
     debug("data_in     = [%d, %d, %d, %d]", batch, in_h, in_w, in_ch);
-    debug("kernel      = [%d, %d, %d, %d]", fh, fw, kin_ch, kout_ch);
+    debug("kernel_shift      = [%d, %d, %d, %d]", fh, fw, kin_ch, kout_ch);
     debug("kernel sgn  = [%d, %d, %d, %d]", fh_s, fw_s, kin_ch_s, kout_ch_s);
-    debug("bias        = [%d, %d]"        , kin_ch_s, kout_ch_s);
+    debug("bias        = [%d, %d]", kin_ch_s, kout_ch_s);
     debug("data_out    = [%d, %d, %d, %d]", batch_out, out_h, out_w, out_ch);
 
     // ----- Input Checking & Error Handling
@@ -122,48 +122,49 @@ int conv2d_3x3_shift(const uint8_t* __restrict data_in,
                             for (int dj = 0; dj < fw; dj++) {
                                 int ix = i + di - fh2;
                                 int jx = j + dj - fw2;
-                                
 
-                                const int patch_h_start = MAX(0, i - fh2);         // goes from -1...26
+
+                                const int patch_h_start = MAX(0, i - fh2);   // goes from -1...26
                                 const int patch_h_end = MIN(in_h, i - fh2 + fw);   // goes from  2...29
-                                const int patch_w_start = MAX(0, j - fw2);         // goes from -1...26
+                                const int patch_w_start = MAX(0, j - fw2);   // goes from -1...26
                                 const int patch_w_end = MIN(in_w, j - fw2 + fw);   // goes from  2...29
 
                                 if (!((ix >= 0 && ix < in_h) && (jx >= 0 && jx < in_h))) {
                                     // skip computation, zero padding
                                     continue;
                                 }
-                                    // accum += array_in[b][ix][jx][q] * kernel_in[di][dj][q][k];
+                                // accum += array_in[b][ix][jx][q] * kernel_in[di][dj][q][k];
 
-                                    // Shift
-                                    uint8_t _temp_val = DATA_IN(b, ix, jx, q) >> KERNEL_S(di, dj, q, k);
+                                // Shift
+                                uint8_t _temp_val = DATA_IN(b, ix, jx, q) >> KERNEL_S(di, dj, q, k);
 
-                                    // Check for the sign
-                                    if (KERNEL_SGN(di, dj, q, k) == 0) { kernel_accum += _temp_val; }
-                                    else {
-                                        kernel_accum -= _temp_val;
-                                    }
-                            } 
+                                // Check for the sign
+                                if (KERNEL_SGN(di, dj, q, k) == 0) { kernel_accum += _temp_val; }
+                                else {
+                                    kernel_accum -= _temp_val;
+                                }
+                            }
                         }
-                        kernel_accum += BIAS_CONV(q,k);
-                        if (kernel_accum < 0 && kernel_accum > underflow_shift_limit)
-                            {kernel_accum = 0; }
-                        else{
-                            kernel_accum >>= kernel_exp_shift; // shift to use pseudo floating point computations 
-                            kernel_accum = MAX(kernel_accum,255); // clip kernel output to int9
-                            kernel_accum = MIN(kernel_accum,-256);
-                            channel_accum += kernel_accum;}
+                        kernel_accum += BIAS_CONV(q, k);
+                        if (kernel_accum < 0 && kernel_accum > underflow_shift_limit) {
+                            kernel_accum = 0;
+                        }
+                        else {
+                            kernel_accum >>= kernel_exp_shift;   // shift to use pseudo floating point computations
+                            kernel_accum = MAX(kernel_accum, 255);   // clip kernel output to int9
+                            kernel_accum = MIN(kernel_accum, -256);
+                            channel_accum += kernel_accum;
+                        }
                     }
-                    if (channel_accum > 0)
-                    {
+                    if (channel_accum > 0) {
                         channel_accum >>= channel_exp_shift;
-                        channel_accum = MAX(channel_accum,255);
-                    }else
-                    {
+                        channel_accum = MAX(channel_accum, 255);
+                    }
+                    else {
                         channel_accum = 0;
                     }
-                    
-                    DATA_OUT(b, i, j, k) = (uint8_t) channel_accum;
+
+                    DATA_OUT(b, i, j, k) = (uint8_t)channel_accum;
                     // array_out[b][i][j][k] = accum;
                 }
             }
@@ -626,14 +627,13 @@ new_conv_protofunc_definition(uint64_t);
 
 #define new_conv_shift_protofunc_definition(dtype)                                                      \
     int conv2d_shift_##dtype(const dtype* __restrict data_in, const int batch, const int in_h,          \
-                             const int in_w, const int in_ch, const uint8_t* __restrict kernel,         \
+                             const int in_w, const int in_ch, const uint8_t* __restrict kernel_shift,   \
                              const int fh, const int fw, const int kin_ch, const int kout_ch,           \
-                             const uint8_t* __restrict kernel_sign, const int fh_s,                     \
-                             const int fw_s, const int kin_ch_s, const int kout_ch_s,                   \
-                             const uint16_t* bias, const int bin_ch, const int bout_ch,                 \
-                             const int input_exponent, const int kernel_out_exponent,                   \
-                             const int channel_out_exponent, const int stride,                          \
-                             dtype* __restrict* pdata_out, int* pbatch_out,                             \
+                             const uint8_t* __restrict kernel_sign, const int fh_s, const int fw_s,     \
+                             const int kin_ch_s, const int kout_ch_s, const uint16_t* bias,             \
+                             const int bin_ch, const int bout_ch, const int input_exponent,             \
+                             const int kernel_out_exponent, const int channel_out_exponent,             \
+                             const int stride, dtype* __restrict* pdata_out, int* pbatch_out,           \
                              int* pout_h, int* pout_w, int* pout_ch)                                    \
     {                                                                                                   \
         int return_value = 0;                                                                           \

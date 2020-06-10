@@ -114,8 +114,8 @@ import_array();
     (const uint64_t *data_in, int batch, int in_h, int in_w, int in_ch),
     (const uint64_t *kernel,  int fh, int fw, int kin_ch, int kout_ch)
 };
-%apply (uint64_t *IN_ARRAY2, int DIM1, int DIM2) {
-    (const uint64_t *bias, int bin_ch, int bout_ch)
+%apply (int16_t *IN_ARRAY2, int DIM1, int DIM2) {
+    (const int16_t *bias, int bin_ch, int bout_ch)
 };
 
 // Typemaps for Output Arrays of Conv2D and MaxPool2D
@@ -129,6 +129,8 @@ import_array();
 %apply (uint16_t** ARGOUTVIEWM_ARRAY4, int *DIM1, int *DIM2, int *DIM3, int *DIM4) { (uint16_t **data_out, int *batch_out, int *out_h, int *out_w, int *out_ch) };
 %apply (uint32_t** ARGOUTVIEWM_ARRAY4, int *DIM1, int *DIM2, int *DIM3, int *DIM4) { (uint32_t **data_out, int *batch_out, int *out_h, int *out_w, int *out_ch) };
 %apply (uint64_t** ARGOUTVIEWM_ARRAY4, int *DIM1, int *DIM2, int *DIM3, int *DIM4) { (uint64_t **data_out, int *batch_out, int *out_h, int *out_w, int *out_ch) };
+%apply (uint8_t** ARGOUTVIEWM_ARRAY4, int *DIM1, int *DIM2, int *DIM3, int *DIM4) { (uint8_t **pdata_out, int *pbatch_out, int *pout_h, int *pout_w, int *pout_ch) };
+
 
 // Typemaps for RELU_1D
 %apply (float *INPLACE_ARRAY1, int DIM1) {  (float *x, int d1) };
