@@ -86,7 +86,9 @@ import_array();
 };
 %apply (uint8_t *IN_ARRAY4, int DIM1, int DIM2, int DIM3, int DIM4) {
     (const uint8_t *data_in, int batch, int in_h, int in_w, int in_ch),
-    (const uint8_t *kernel,  int fh, int fw, int kin_ch, int kout_ch)
+    (const uint8_t *kernel,  int fh, int fw, int kin_ch, int kout_ch),
+    (const uint8_t *kernel_shift,  int fh, int fw, int kin_ch, int kout_ch),
+    (const uint8_t *kernel_sign,  int fh_s, int fw_s, int kin_ch_s, int kout_ch_s)    
 };
 %apply (int16_t *IN_ARRAY4, int DIM1, int DIM2, int DIM3, int DIM4) {
     (const int16_t *data_in, int batch, int in_h, int in_w, int in_ch),
@@ -111,6 +113,9 @@ import_array();
 %apply (uint64_t *IN_ARRAY4, int DIM1, int DIM2, int DIM3, int DIM4) {
     (const uint64_t *data_in, int batch, int in_h, int in_w, int in_ch),
     (const uint64_t *kernel,  int fh, int fw, int kin_ch, int kout_ch)
+};
+%apply (uint64_t *IN_ARRAY2, int DIM1, int DIM2) {
+    (const uint64_t *bias, int bin_ch, int bout_ch)
 };
 
 // Typemaps for Output Arrays of Conv2D and MaxPool2D

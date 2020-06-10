@@ -86,10 +86,11 @@ const char* NNE_print_error(int code);
     *(kernel + k + (kout_ch * q) + (kout_ch * kin_ch * dj) + (kout_ch * kin_ch * fw * di))
 
 #define KERNEL_S(di, dj, q, k)                                                                     \
-    *(kernel_shift + k + (kout_ch * q) + (kout_ch * kin_ch * dj) + (kout_ch * kin_ch * fw * di))
+    *(kernel + k + (kout_ch * q) + (kout_ch * kin_ch * dj) + (kout_ch * kin_ch * fw * di))
 #define KERNEL_SGN(di, dj, q, k)                                                                   \
     *(kernel_sign + k + (kout_ch * q) + (kout_ch * kin_ch * dj) + (kout_ch * kin_ch * fw * di))
-
+#define BIAS_CONV(q, k)                                                                   \
+    *(bias + k + (kout_ch * q))
 
 #define DATA_OUT(b, i, j, ch)                                                                      \
     *(data_out + ch + (out_ch * j) + (out_ch * out_w * i) + (out_ch * out_w * out_h * b))
