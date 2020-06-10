@@ -3,7 +3,6 @@ use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
 library UNISIM;
-use UNISIM.all;
 use UNISIM.vcomponents.all;
 
 entity log2_multiplier is
@@ -66,7 +65,7 @@ begin
   -- *** Invertion is done by inverting the signal nad adding 1. This is done by using the sign bit as carry input. ***
   carry(0) <= S_Sign_i(0);
   CARRY_chain : for i in 0 to (INPUT_WIDTH - 1)/4 generate
-    CARRY4_inst : entity Unisim.CARRY4
+    CARRY4_inst : CARRY4
       port map(
         CO     => carry(4 * i + 3 + 1 downto 4 * i + 1), -- 4-bit carry out
         O      => x_signed(4 * i + 3 downto 4 * i),      -- 4-bit carry chain XOR data out
@@ -79,7 +78,7 @@ begin
 
   x_signed(x_signed'left) <= S_Sign_i(0);
   Register_Yo : for i in 0 to INPUT_WIDTH generate
-    FDRE_inst : entity Unisim.FDRE
+    FDRE_inst : FDRE
       generic map(
         INIT => '0')
       port map(
