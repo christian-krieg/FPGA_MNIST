@@ -8,7 +8,7 @@ use work.clogb2_Pkg.all;
 
 entity conv2d is
   Generic ( 
-    LAYER_ID : integer := 0; -- ID of the Layer. Reuired for reading correct MIF files
+    LAYER_ID : integer := 1; -- ID of the Layer. Reuired for reading correct MIF files
     INPUT_CHANNEL_NUMBER : integer range 1 to 512 := 1; -- Number of input channels 
     OUTPUT_CHANNEL_NUMBER : integer range 1 to 512 := 1; -- Number of input channels 
     MIF_PATH : STRING  := "C:/Users/lukas/Documents/SoC_Lab/FPGA_MNIST/vivado/NN_IP/EggNet_1.0/mif/"; --try if relative path is working 
@@ -45,6 +45,8 @@ architecture Behavioral of conv2d is
   signal shiftreg_valid_out : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
   signal shiftreg_last_out : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
   signal shiftreg_is_ready_out : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
+  
+  signal channels_ready : std_logic_vector(OUTPUT_CHANNEL_NUMBER-1 downto 0); 
 
   signal kernel_last : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
   signal kernel_valid : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);  
@@ -73,7 +75,7 @@ begin
         M_X_data_o => input_kernels(i),
         M_Valid_o  => shiftreg_valid_out(i),
         M_Last_o   => shiftreg_last_out(i), 
-        M_Ready_i  => M_Ready_i
+        M_Ready_i  => channels_ready(0)
       );    
   end generate;
   S_Ready_o <= shiftreg_is_ready_out(0);
@@ -82,7 +84,7 @@ begin
       Channel:  entity work.Conv_channel
         Generic map( 
           LAYER_ID => LAYER_ID,
-          OUTPUT_CHANNEL_ID => i,
+          OUTPUT_CHANNEL_ID => i+1,
           INPUT_CHANNEL_NUMBER => INPUT_CHANNEL_NUMBER,
           MIF_PATH => MIF_PATH,
           WEIGHT_MIF_PREAMBLE => WEIGHT_MIF_PREAMBLE,
@@ -95,7 +97,7 @@ begin
           S_Valid_i	 => shiftreg_valid_out(0),	
           S_X_data_i => input_kernels,
           S_Last_i   => shiftreg_last_out(0),  
-          S_Ready_o  => shiftreg_is_ready_out(0), 
+          S_Ready_o  => channels_ready(i), 
           M_Valid_o	 => M_Valid_o,
           M_Y_data_o => M_Y_data_o((i+1)*ACTIVATION_WIDTH-1 downto i*ACTIVATION_WIDTH),
           M_Last_o   => M_Last_o,
