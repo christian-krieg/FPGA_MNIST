@@ -10,8 +10,8 @@ use work.clogb2_Pkg.all;
 
 entity Conv_channel is
   Generic ( 
-    LAYER_ID : integer := 0; -- ID of the Layer. Reuired for reading correct MIF files
-    OUTPUT_CHANNEL_ID : integer := 0; -- ID of the output channel. Required for reading correct MIF files
+    LAYER_ID : integer := 1; -- ID of the Layer. Reuired for reading correct MIF files
+    OUTPUT_CHANNEL_ID : integer := 1; -- ID of the output channel. Required for reading correct MIF files
     INPUT_CHANNEL_NUMBER : integer range 1 to 512 := 1; -- Number of input channels 
     MIF_PATH : STRING  := "C:/Users/lukas/Documents/SoC_Lab/FPGA_MNIST/vivado/NN_IP/EggNet_1.0/mif/"; --try if relative path is working 
     WEIGHT_MIF_PREAMBLE : STRING := "Weight_";
@@ -204,9 +204,9 @@ begin
           if adder_out(adder_out'left) = '1' then
               M_Y_data_o <= (others => '0'); -- Set negative values to zero 
           elsif adder_out(adder_out'left downto adder_out'left-CHANNEL_FRACTION_SHIFT+1) /= (adder_out(adder_out'left downto adder_out'left-CHANNEL_FRACTION_SHIFT+1)'range => '0') then
-              M_Y_data_o <= (others => '1');
+              M_Y_data_o <= (others => '1'); --clip
           else
-              M_Y_data_o <= adder_out(adder_out'left-CHANNEL_FRACTION_SHIFT-1 downto adder_out'left-CHANNEL_FRACTION_SHIFT-ACTIVATION_WIDTH); -- Cut off sign bit and shift
+              M_Y_data_o <= adder_out(ACTIVATION_WIDTH+CHANNEL_FRACTION_SHIFT-1 downto CHANNEL_FRACTION_SHIFT); -- Cut off sign bit and shift
           end if;
         end if;  
       end if;
@@ -226,7 +226,7 @@ begin
           if adder_out(adder_out'left) = '1' then
               M_Y_data_o <= (others => '0'); -- Set negative values to zero 
           else
-              M_Y_data_o <= adder_out(adder_out'left-1 downto adder_out'left-ACTIVATION_WIDTH); -- Cut off sign bit 
+              M_Y_data_o <= adder_out(ACTIVATION_WIDTH-1 downto 0); -- Cut off sign bit 
           end if;
         end if;  
       end if;
