@@ -87,7 +87,7 @@ import_array();
 %apply (uint8_t *IN_ARRAY4, int DIM1, int DIM2, int DIM3, int DIM4) {
     (const uint8_t *data_in, int batch, int in_h, int in_w, int in_ch),
     (const uint8_t *kernel,  int fh, int fw, int kin_ch, int kout_ch),
-    (const uint8_t *kernel_shift,  int fh, int fw, int kin_ch, int kout_ch),
+    (const uint8_t *kernel_shift,  int fh_sh, int fw_sh, int kin_ch_sh, int kout_ch_sh),
     (const uint8_t *kernel_sign,  int fh_s, int fw_s, int kin_ch_s, int kout_ch_s)    
 };
 %apply (int16_t *IN_ARRAY4, int DIM1, int DIM2, int DIM3, int DIM4) {
@@ -129,7 +129,6 @@ import_array();
 %apply (uint16_t** ARGOUTVIEWM_ARRAY4, int *DIM1, int *DIM2, int *DIM3, int *DIM4) { (uint16_t **data_out, int *batch_out, int *out_h, int *out_w, int *out_ch) };
 %apply (uint32_t** ARGOUTVIEWM_ARRAY4, int *DIM1, int *DIM2, int *DIM3, int *DIM4) { (uint32_t **data_out, int *batch_out, int *out_h, int *out_w, int *out_ch) };
 %apply (uint64_t** ARGOUTVIEWM_ARRAY4, int *DIM1, int *DIM2, int *DIM3, int *DIM4) { (uint64_t **data_out, int *batch_out, int *out_h, int *out_w, int *out_ch) };
-%apply (uint8_t** ARGOUTVIEWM_ARRAY4, int *DIM1, int *DIM2, int *DIM3, int *DIM4) { (uint8_t **pdata_out, int *pbatch_out, int *pout_h, int *pout_w, int *pout_ch) };
 
 
 // Typemaps for RELU_1D
