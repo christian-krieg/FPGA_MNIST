@@ -11,7 +11,7 @@ use work.egg_box.all;
 
 
 entity kernel3x3_log2 is
-  Generic(FRAC_SHIFT : integer);
+  Generic(FRAC_SHIFT : integer := 1);
 	port(
     -- Clock Reset
 		Clk_i : in STD_LOGIC;
@@ -34,8 +34,6 @@ entity kernel3x3_log2 is
 end kernel3x3_log2;
 
 architecture Behavioral of kernel3x3_log2 is
-
-constant EXTRA_BIT : integer := 3; 
 
 signal ready_mul_vec : std_logic_vector(KERNEL_SIZE-1 downto 0);
 signal valid_mul_vec : std_logic_vector(KERNEL_SIZE-1 downto 0);

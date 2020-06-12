@@ -22,13 +22,21 @@ from vunit import VUnit
 import numpy as np
 
 import EggNet.VunitExtension as EggUnit
+from EggNet.Layer import Conv2d_shift_Layer
+from EggNet.Generator import Egg_Generator
 
 import importlib.util
 
 
 class Testbench(EggUnit.Simulator):
     def __init__(self, vunit: VUnit, libname:str, root_path:pathlib.Path, testbench_name = None, vcd = False, synopsys = False):
-       super().__init__(vunit, libname, root_path,pathlib.Path(__file__),testbench_name=testbench_name,vcd=vcd,synopsys=synopsys)
+        hyper_par_path = root_path.parents[3]
+        self.param_path = self.ROOT.parents[3] / 'net' / 'final_weights' / 'float'
+        self.generator = Egg_Generator(hyper_par_path)
+        self.generator.generate_mif(self.param_path,root_path.parent / 'mif')
+        
+        super().__init__(vunit, libname, root_path,pathlib.Path(__file__),testbench_name=testbench_name,vcd=vcd,synopsys=synopsys)
+       
         
     def load_testdata(self):
         images = super()._use_rand_images(3,randseed=1)
@@ -36,12 +44,17 @@ class Testbench(EggUnit.Simulator):
         images_c[:,:,:,0] = images
         vectors = EggUnit.get_vectors_from_image(images_c)
         kernels = EggUnit.get_Kernels(vectors)
-        #test = np.arange(45,dtype=np.uint8)
-        #test = test.reshape([5,3,3])
-        #super().load_testdata(test,"testdata.csv") 
+        results = self._gen_Result_data(images)
         super().load_testdata(kernels[:,:,:,:,:,0],"testdata.csv","TB_CSV_DATA_FILE")    
-        super().load_testdata(images,"resultdata.csv","TB_CSV_RESULTS_FILE")    
+        super().load_testdata(results,"resultdata.csv","TB_CSV_RESULTS_FILE")   
+        
+    def _gen_Result_data(self, images):
+        # TODO: Reado Input exonent etc. from generator
+        conv_layer = Conv2d_shift_Layer(1,16,1,self.param_path, 8, 7, 6)
+        result = conv_layer(images.astype(np.uint8))
+        return result
     
+   
     def execute(self):
         super().execute()
         

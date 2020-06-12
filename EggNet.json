@@ -10,9 +10,9 @@
   },
   "Fractions" : {
     "Input Fraction" : 8,
-    "Layer 1 kernel output fraction" : 9,
-    "Layer 1 layer output fraction" : 11,
-    "Layer 2 kernel output fraction" : 11,
-    "Layer 2 layer output fraction" : 14
+    "Layer 1 kernel output fraction" : 7,
+    "Layer 1 layer output fraction" : 6,
+    "Layer 2 kernel output fraction" : 4,
+    "Layer 2 layer output fraction" : 4
   }
 }
