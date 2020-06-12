@@ -621,3 +621,9 @@ def clip_linear_float(x, lsb, fsr):
 
 def clip_log_float(x, lsb, fsr):
     return np.clip(lsb * np.round(np.log2(x)), a_min=0, a_max=2 ** fsr - lsb)
+
+def quant_log2(weight,bias,WEIGHT_SHIFT_BIT_WIDTH,BIAS_WIDTH):
+    shift = np.uint8(np.clip(np.around(np.abs(np.log2(np.abs(weight)))),0,2**WEIGHT_SHIFT_BIT_WIDTH-1))
+    sign = np.where(weight<0.0,1,0)
+    bias_sh = np.int16(np.around(2**(BIAS_WIDTH-1)*bias))
+    return shift, sign, bias_sh

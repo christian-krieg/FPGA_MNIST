@@ -2,12 +2,15 @@ import math
 from abc import ABC
 from typing import Optional
 
+import pathlib
 import numpy as np
 from numpy import reshape
 from numpy.core.multiarray import ndarray
 
 from EggNet import softmax, pooling_max, conv2d_fast, fpi_conv2d, relu, conv2d, init_kernel, apply_pool
-from EggNet.quant import to_fpi, datatype_for_bits, np_bits, next_pow2, quantize_vector
+from EggNet.quant import to_fpi, datatype_for_bits, np_bits, next_pow2, quantize_vector, quant_log2
+
+import EggNetExtension as falcon_egg
 
 
 class Layer:
@@ -685,3 +688,179 @@ class ConditionLayer(Layer):
             assert cond(x)
 
         return x
+
+class Conv2d_shift_Layer(Layer):
+    b: ndarray
+    kernel: ndarray
+
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 layer_id,
+                 parameter_path:pathlib.Path,
+                 input_exp,
+                 kernel_exp,
+                 channel_exp,
+                 gen_parameter_from_float:bool=True,
+                 create_random_parameter:bool=False,
+                 parameter_store_path:pathlib.Path=None
+                 ):
+        
+        """
+        Conv2d using shift operations instead of multiplications. 
+        Bit width of activations is fixed at 8 bit 
+        Bit width of shifts is consequently set to 3 bit
+        Signs and shifts are saved in separated arrays 
+        Bias is allways used. If not required set them to 0
+        
+        This layer class is intendend to depict the hardware implementation 
+        of a conv2d shift layer. For this reason the implementation is not 
+        optimized for Von Neumann architectures.  
+        
+
+        Parameters
+        ----------
+        in_channels : int
+            Number of input channels.
+        out_channels : int
+            Number of output channels.
+        parameter_path : pathlib.Path, optional
+            Path the weights of pretrained network. The default is None.
+        layer_id : TYPE, optional
+            Identification number of Layer (ig. Layer position). The default is None.
+        input_exp : integer
+            Exponent of fixed point input value 
+        kernel_exp : integer 
+            Exponent of fixed point kernel output 
+        channel_exp : integer 
+            Exponent of fixed point channel output (ig. Layer output)
+        gen_parameter_from_float : bool, optional
+            If True floating point paramter are qunatized, else 
+            quantized values are loaded. 
+            The default is True.
+        create_random_parameter : bool, optional
+            If False layer parameter are loaded from parameter path, else 
+            random parameter are generated and stored in parameter path. 
+            The default is False.
+        parameter_store_path : pathlib.Path, optional
+            If paramter should be stored in a different directory it can be 
+            specified using parameter_store_path
+
+        Returns
+        -------
+        None.
+
+        """
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = 3
+        self.activation = relu
+        self.use_bias = True
+        self.dtype = np.uint8
+        self.activation_width = 8
+        self.bias_width = 9
+        self.shift_width = 3
+        self.input_exp = input_exp
+        self.kernel_exp = kernel_exp
+        self.channel_exp = channel_exp      
+        self.layer_id = layer_id
+        self.parameter_path = parameter_path
+        self.gen_parameter_from_float = gen_parameter_from_float
+        self.create_random_parameter = create_random_parameter
+        self.parameter_store_path = parameter_store_path
+
+        if create_random_parameter == False:
+            
+            weight = np.load(parameter_path / ("cn" + str(layer_id) + ".k.npy"))
+            bias = np.load(parameter_path /  ("cn" + str(layer_id) + ".b.npy"))
+            self.weight_original = weight[:,:,0:in_channels,0:out_channels]
+            self.bias_original = bias[0:in_channels*out_channels].reshape([in_channels,out_channels])
+            if gen_parameter_from_float == True:
+                self.weight_shifts,self.weight_signs,self.bias_sh = quant_log2(weight,bias,self.activation_width,self.bias_width)
+                self.bias_sh = self.bias_sh[0:in_channels*out_channels].reshape([in_channels,out_channels])
+                self.weight_signs = self.weight_signs[:,:,0:in_channels,0:out_channels]
+                self.weight_shifts = self.weight_shifts[:,:,0:in_channels,0:out_channels]
+            else:
+                self.weight_shfits = np.abs(weight)
+                self.weight_signs = np.where(weight<0.0,1,0)
+                self.bias_sh = bias[0:in_channels*out_channels].reshape([in_channels,out_channels])
+        else:
+            self.weight_shfits = np.random.randint(0,2**self.shift_width,[self.kernel_size, self.kernel_size, self.input_channels, self.out_channels],dtype=self.dtype)
+            self.weight_signs = np.random.randint(0,1,[self.kernel_size, self.kernel_size, self.input_channels, self.out_channels],dtype=self.dtype)
+            self.bias_sh = np.random.randint(-2**(self.bias_width-1),2**(self.bias_width-1),[self.kernel_size, self.kernel_size, self.input_channels, self.out_channels],dtype=self.dtype)
+    
+    
+    @property
+    def weights(self):
+        return self.weight_shfits, self.weight_signs
+
+    @weights.setter
+    def weights(self, value):
+        assert isinstance(value, np.ndarray)
+        self.weight_shfits = np.abs(value)
+        self.weight_signs = np.where(value<0.0,1,0).astype(np.uint8)
+
+    @property
+    def bias(self):
+        return self.bias_sh
+
+    @bias.setter
+    def bias(self, value):
+        assert isinstance(value, np.ndarray)
+        self.bias = value
+
+    @property
+    def activation_func(self):
+        return self.activation
+
+    def __call__(self, input, *args, **kwargs):
+        x = input
+        assert len(x.shape) == 4, "A 4 dimensional array is required"
+        try:
+            print(x.shape)
+            print(self.weight_shifts.astype(np.uint8).shape)
+            print(self.weight_signs.astype(np.uint8).shape)
+            print(self.bias_sh.astype(np.int16).shape)
+            
+            z = falcon_egg.conv2d_3x3_shift(x, self.weight_shifts.astype(np.uint8), self.weight_signs.astype(np.uint8), 
+                                            self.bias_sh.astype(np.int16), int(self.input_exp), int(self.kernel_exp), 
+                                            self.channel_exp, int(1))
+            #z = falcon_egg.conv2d_3x3(x,self.weight_shifts.astype(np.uint8))
+        except ImportError as imerror:
+            print("[ERROR]: The Fast C-Extension 'falcon egg' could not be loaded? Is it installed? Fallback to default python "
+                  "implementation: ", imerror)
+
+        return z
+
+
+    def get_input_shape(self):
+        # Input data:  [batch, in_height, in_width, in_channels]
+        # Kernel size: [fh, fw, kin_ch, kout_ch]
+        #
+        # Data can be arbitrary shaped except the number of input channels, which must match the number of output
+        # channels
+        return -1, -1, -1, self.kernel.shape[2]
+
+    def get_output_shape(self, input_data_shape: ndarray = None):
+        # Input data:  [batch, in_height, in_width, in_channels]
+        # Kernel size: [fh, fw, kin_ch, kout_ch]
+        return -1, -1, -1, self.kernel.shape[3]
+
+    def cast(self, new_dtype: np.dtype):
+        self.dtype = new_dtype
+        self.kernel = self.kernel.astype(dtype=new_dtype)
+        self.b = self.b.astype(dtype=new_dtype)
+
+    def __copy__(self):
+        c = Conv2d_shift_Layer(in_channels=self.in_channels,
+                        out_channels=self.out_channels,
+                        layer_id=self.layer_id,
+                        parameter_path = self.parameter_path,
+                        input_exp =self.input_exp,
+                        kernel_exp = self.kernel_exp,
+                        channel_exp = self.channel_exp,
+                        gen_parameter_from_float = self.gen_parameter_from_float,
+                        create_random_parameter = self.create_random_parameter,
+                        parameter_store_path = self.parameter_store_path)
+        return c

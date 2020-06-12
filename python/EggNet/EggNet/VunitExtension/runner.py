@@ -135,8 +135,8 @@ class VU_Runner():
     
         Returns
         -------
-        VU : TYPE
-            DESCRIPTION.
+        VU : VUnit class
+            see VUnit documentation.
     
         """
         # --- Return only Version number of VUnit

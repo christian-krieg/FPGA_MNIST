@@ -12,3 +12,5 @@ import EggNet.Optimizers
 import EggNet.quant
 import EggNet.Layer
 import EggNet.Network
+import EggNet.Generator
+import EggNet.VunitExtension
