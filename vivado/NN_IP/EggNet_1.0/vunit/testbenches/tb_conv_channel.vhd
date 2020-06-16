@@ -8,6 +8,10 @@ LIBRARY work;
 use work.csv_numpy.all;
 use work.egg_box.all;
 
+library OSVVM ; 
+  use OSVVM.RandomBasePkg.all ; 
+  use OSVVM.RandomPkg.all ; 
+
 entity tb_conv_channel is
   generic (
     RUNNER_CFG : string;
@@ -15,7 +19,8 @@ entity tb_conv_channel is
     TB_CSV_DATA_FILE     : string;
     TB_CSV_RESULTS_FILE   : string;
     INPUT_CHANNEL_NUMBER  : integer := 1;
-    MIF_PATH              : string := "C:/Users/lukas/Documents/SoC_Lab/FPGA_MNIST/vivado/NN_IP/EggNet_1.0/mif/";
+    RANDOM_READY          : std_logic := '1';
+    MIF_PATH              : string := "../../mif/";
     WEIGHT_MIF_PREAMBLE   : STRING := "Weight_";
     BIAS_MIF_PREAMBLE     : STRING := "Bias_";
     CH_FRAC_MIF_PREAMBLE  : STRING := "Channel_Fraction_shift_";
@@ -43,6 +48,8 @@ architecture tb of tb_conv_channel is
   signal m_Ready      :std_logic;
   signal m_Valid      :std_logic;
   
+  signal counter      :integer; 
+  
 
 begin
   
@@ -61,11 +68,13 @@ begin
     begin
       printDim(test_img_dim);
       layer_aresetn <= '0'; 
-      m_Ready <= '0'; 
+      counter <= 0;
+      for i in 0 to KERNEL_SIZE-1 loop
+        s_data(0)(i) <= (others =>  '0');
+      end loop;
       s_valid <= '0';
       s_last <= '0'; 
       wait for TbPeriod*3; 
-      m_Ready <= '1';
       layer_aresetn <= '1'; 
       wait for TbPeriod; 
       -- *** iterate through batches *** 
@@ -85,7 +94,14 @@ begin
                 tile_index := iterate(tile_index,0,KERNEL_SIZE-1);                                              
               end loop;  
             end loop;
+            wait until layer_clk = '1'; 
+            if s_ready /= '1' then
+              wait until s_ready = '1'; 
+            end if;
+            --info("Channel output: " & integer'image(to_integer(unsigned(m_Y_data))));
+            
             s_data(0) <= activation_tile;
+            counter <= counter +1;
             s_valid <= '1';
             -- *** Set last flag at the end of each image *** 
             if j = test_img_dim(1)-1 and k = test_img_dim(2)-1 then 
@@ -94,11 +110,7 @@ begin
               s_last <= '0';
             end if;
             
-            if s_ready /= '1' then
-              wait until s_ready = '1'; 
-            end if;
-            --info("Channel output: " & integer'image(to_integer(unsigned(m_Y_data))));
-            wait until layer_clk = '1'; 
+
           end loop;  
         end loop;  
       end loop;  
@@ -112,11 +124,10 @@ begin
     begin
       printDim(test_img_dim);
       layer_aresetn <= '0'; 
-      m_Ready <= '0'; 
       s_valid <= '0';
       s_last <= '0'; 
       wait for TbPeriod*3; 
-      m_Ready <= '1';
+ 
       layer_aresetn <= '1'; 
       wait for TbPeriod; 
       wait until layer_clk'event and layer_clk = '1'; 
@@ -138,6 +149,27 @@ begin
     test_runner_cleanup(runner);
     wait;
   end process;
+
+Stimuli_gen: process(layer_clk,layer_aresetn)
+  variable RV : RandomPType ; 
+  variable DataSigned : signed(7 downto 0) ;
+begin
+  --RV.InitSeed (RV'instance_name)  ;              -- Generate initial seeds
+  if layer_aresetn = '0' then
+    m_Ready <= '0';    
+  elsif rising_edge(layer_clk) then 
+    --Generate a value in range -1 to 127
+    if RANDOM_READY = '1' then
+      DataSigned := RV.RandSigned(-1,127, 8);
+      if to_integer(DataSigned) < 0 then
+        m_Ready <= not m_Ready;
+      end if;  
+    else 
+      m_Ready <= '1';
+    end if;
+
+  end if;
+end process; 
   
   Channel:  entity work.Conv_channel
     Generic map( 
@@ -173,11 +205,17 @@ begin
     if layer_aresetn = '0' then
       width_idx := 0;
       height_idx := 0;
+      batch_idx := 0;
     elsif rising_edge(layer_clk) and m_Ready = '1' and m_Valid = '1' then
-      --check_equal(to_integer(unsigned(m_Y_data)),result_img_arr(batch_idx,height_idx,width_idx),
-      --  "[" & integer'image(batch_idx) & "][" & integer'image(height_idx) & "][" & integer'image(width_idx) & "]"); 
-      batch_idx := iterate(batch_idx,0,result_img_dim(0)-1);
-      height_idx := iterate(height_idx,0,result_img_dim(1)-1);
+      info("[" & integer'image(batch_idx) & "][" & integer'image(height_idx) & "][" & integer'image(width_idx) & "] Got: " & integer'image(to_integer(unsigned(m_Y_data))) & " Expect: " & integer'image(result_img_arr(batch_idx,height_idx,width_idx)));
+      check_equal(to_integer(unsigned(m_Y_data)),result_img_arr(batch_idx,height_idx,width_idx),
+        "[" & integer'image(batch_idx) & "][" & integer'image(height_idx) & "][" & integer'image(width_idx) & "]"); 
+      if width_idx = result_img_dim(2)-1 then 
+        if height_idx = result_img_dim(1)-1 then
+          batch_idx := iterate(batch_idx,0,result_img_dim(0)-1);
+        end if;
+        height_idx := iterate(height_idx,0,result_img_dim(1)-1);
+      end if;  
       width_idx := iterate(width_idx,0,result_img_dim(2)-1);
     end if; 
   end process;

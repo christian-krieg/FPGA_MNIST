@@ -30,8 +30,8 @@ import importlib.util
 
 class Testbench(EggUnit.Simulator):
     def __init__(self, vunit: VUnit, libname:str, root_path:pathlib.Path, testbench_name = None, vcd = False, synopsys = False):
-        hyper_par_path = root_path.parents[3]
-        self.param_path = self.ROOT.parents[3] / 'net' / 'final_weights' / 'float'
+        hyper_par_path = root_path.parents[3] / "EggNet.json"
+        self.param_path = root_path.parents[3] / 'net' / 'final_weights' / 'float'
         self.generator = Egg_Generator(hyper_par_path)
         self.generator.generate_mif(self.param_path,root_path.parent / 'mif')
         
@@ -40,17 +40,20 @@ class Testbench(EggUnit.Simulator):
         
     def load_testdata(self):
         images = super()._use_rand_images(3,randseed=1)
+        #images = images = np.uint8(np.random.normal(0, 0.3, size=(3,28,28))*255)
         images_c = np.zeros(images.shape + (1,)) 
         images_c[:,:,:,0] = images
         vectors = EggUnit.get_vectors_from_image(images_c)
         kernels = EggUnit.get_Kernels(vectors)
-        results = self._gen_Result_data(images)
+        results = self._gen_Result_data(images_c)
         super().load_testdata(kernels[:,:,:,:,:,0],"testdata.csv","TB_CSV_DATA_FILE")    
-        super().load_testdata(results,"resultdata.csv","TB_CSV_RESULTS_FILE")   
+        super().load_testdata(results[:,:,:,0],"resultdata.csv","TB_CSV_RESULTS_FILE")   
         
     def _gen_Result_data(self, images):
         # TODO: Reado Input exonent etc. from generator
-        conv_layer = Conv2d_shift_Layer(1,16,1,self.param_path, 8, 7, 6)
+        conv_layer = Conv2d_shift_Layer(1,16,1,self.param_path, self.generator.exponents["Input Exponent"],
+                                        self.generator.exponents["Layer 1"]["Kernel output exponent"],
+                                        self.generator.exponents["Layer 1"]["Layer output exponent"])
         result = conv_layer(images.astype(np.uint8))
         return result
     
@@ -70,7 +73,7 @@ if __name__ == "__main__":
     spec.loader.exec_module(run_py)
     
     # -- Setup arguments 
-    args = ['-t', pathlib.Path(__file__).stem, '--testpath',str(pathlib.Path(__file__).parent.absolute()), '--vcd']
+    args = ['-t', pathlib.Path(__file__).stem, '--testpath',str(pathlib.Path(__file__).parent.resolve()), '--vcd']
     # -- Initialze vunit 
     runner = run_py.VU_Run(ROOT,SRC_ROOT,args)
     runner.run_test()

@@ -39,8 +39,8 @@ signal sum_2stg : sum_array_ss_t;
 signal sum_3stg : sum_array_ts_t;
 signal bias_sum : std_logic_vector(ACTIVATION_WIDTH+1 downto 0); 
 
-signal valid_1stg, valid_2stg, valid_3stg :std_logic := '0';
-signal last_1stg, last_2stg, last_3stg :std_logic := '0';
+signal valid_1stg, valid_2stg, valid_3stg, valid_4stg, valid_4stg_R :std_logic := '0';
+signal last_1stg, last_2stg, last_3stg, last_4stg, last_4stg_R :std_logic := '0';
 
 begin
 
@@ -53,21 +53,29 @@ Control_Sig: process (Clk_i, Rst_i) is
         valid_1stg <= '0';
         valid_2stg <= '0';
         valid_3stg <= '0';       
+        valid_4stg <= '0';               
+        valid_4stg_R <= '0';               
         last_1stg  <= '0';
         last_2stg  <= '0';
         last_3stg  <= '0';
+        last_4stg  <= '0';        
+        last_4stg_R  <= '0';        
       else 
         if M_Ready_i = '1' then 
           
           valid_1stg <= S_Valid_i;
           valid_2stg <= valid_1stg;
           valid_3stg <= valid_2stg;
-          M_Valid_o <= valid_3stg; 
+          valid_4stg <= valid_3stg; 
+          valid_4stg_R <= valid_4stg; 
+          M_Valid_o <= valid_4stg_R;  -- quantized_adder requires 3 cycles to compute a single result (pipelined)  
           
           last_1stg <= S_Last_i;
           last_2stg <= last_1stg;
           last_3stg <= last_2stg;
-          M_Last_o <= last_3stg;           
+          last_4stg <= last_3stg;    
+          last_4stg_R <= last_4stg;          
+          M_Last_o <= last_4stg_R;          
         end if;   
       end if;  
     end if;  
@@ -126,7 +134,7 @@ Adder_Third_Stage: entity work.fullp_adder_2th_comp
               B_i => sum_2stg(1),
               S_o => sum_3stg(0));  
 
-Adder_Output_Stage: entity work.quantized_adder 
+Adder_Output_Stage: entity work.quantized_adder -- (Requires 3 cycle to compute a single result (pipelined). Valid and last signal have to be delayed also 3 cylces! 
     generic map(INPUT_WIDTH => ACTIVATION_WIDTH+4,
                 OUTPUT_WIDTH => ACTIVATION_WIDTH+1, --still signed values. Therefore an additional sign bit is needed 
                 FRAC_SHIFT => FRAC_SHIFT) 

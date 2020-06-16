@@ -77,7 +77,7 @@ begin
     Generic map(FRAC_SHIFT => FRAC_SHIFT)
     Port map( Clk_i           => Clk_i,
               Rst_i           => Rst_i,
-              S_Valid_i       => valid_mul_vec(0), -- since valid and last of all multipliers are the same, anyone can be used. Others are deleted during synthesis
+              S_Valid_i       => valid_mul_vec(0), -- since valid and last of all multipliers are the same, any signal can be used. Others are deleted during synthesis
               S_Last_i        => last_mul_vec(0),
               M_Valid_o       => M_Valid_o,
               M_Last_o        => M_Last_o,

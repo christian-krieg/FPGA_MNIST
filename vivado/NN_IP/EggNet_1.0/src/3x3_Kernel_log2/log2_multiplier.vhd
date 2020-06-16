@@ -85,7 +85,7 @@ begin
         Q  => M_Weighted_X(i),   -- Data output
         C  => Clk_i,             -- Clock input
         CE => M_Ready_i,         -- Clock enable input
-        R  => carry(carry'left), -- Synchronous reset input
+        R  => carry(carry'left) and M_Ready_i, -- Synchronous reset input
         D  => x_signed(i)        -- Data input
       );
   end generate;

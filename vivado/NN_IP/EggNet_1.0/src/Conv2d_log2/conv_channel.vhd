@@ -16,8 +16,8 @@ entity Conv_channel is
     MIF_PATH : STRING  := "C:/Users/lukas/Documents/SoC_Lab/FPGA_MNIST/vivado/NN_IP/EggNet_1.0/mif/"; --try if relative path is working 
     WEIGHT_MIF_PREAMBLE : STRING := "Weight_";
     BIAS_MIF_PREAMBLE : STRING := "Bias_";
-    CH_FRAC_MIF_PREAMBLE : STRING := "Channel_Fraction_shift_";
-    K_FRAC_MIF_PREAMBLE : STRING := "Kernel_Fraction_shift_"
+    CH_FRAC_MIF_PREAMBLE : STRING := "Layer_Exponent_shift_";
+    K_FRAC_MIF_PREAMBLE : STRING := "Kernel_Exponent_shift_"
   );
   Port (
     -- Clk and reset
@@ -28,13 +28,13 @@ entity Conv_channel is
     S_Valid_i	    : in std_logic;
     S_X_data_i    : in channel_input_array_t(INPUT_CHANNEL_NUMBER - 1 downto 0);
     S_Last_i      : in std_logic;
-    S_Ready_o     : out std_logic;
+    S_Ready_o     : out std_logic := '0';
 
     -- Master interface --> connect to memory controller slave
-    M_Valid_o	    : out std_logic;
-    M_Y_data_o    : out std_logic_vector(ACTIVATION_WIDTH-1 downto 0);
-    M_Last_o      : out std_logic;
-    M_Ready_i     : in std_logic
+    M_Valid_o	    : out std_logic := '0';
+    M_Y_data_o    : out std_logic_vector(ACTIVATION_WIDTH-1 downto 0) := (others => '0');
+    M_Last_o      : out std_logic := '0';
+    M_Ready_i     : in std_logic := '0'
   );
 end Conv_channel;
 
@@ -134,7 +134,6 @@ architecture Behavioral of Conv_channel is
   constant KERNEL_FRACTION_SHIFT  : integer := init_kernel_fraction(K_FRAC_MIF_FILE_NAME);
   constant CHANNEL_FRACTION_SHIFT : integer := init_channel_fraction(CH_FRAC_MIF_FILE_NAME);
 
-  signal input_kernels : input_array_t; 
   signal kernel_outputs : output_array_t; 
   signal kernel_last : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
   signal kernel_valid : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);  
@@ -142,14 +141,25 @@ architecture Behavioral of Conv_channel is
   constant ADDER_STAGES: integer := natural(ceil(log2(real(INPUT_CHANNEL_NUMBER)))); 
   --type adder_tree_array_t is array (natural range<>) of STD_LOGIC_VECTOR;
   --signal adder_out : adder_outputs(INPUT_CHANNEL_NUMBER-1 downto 0)(ACTIVATION_WIDTH+ADDER_STAGES-1 downto 0); 
-  signal adder_out : std_logic_vector(ACTIVATION_WIDTH+ADDER_STAGES downto 0); 
+  signal adder_out : std_logic_vector(ACTIVATION_WIDTH+ADDER_STAGES downto 0) := (others => '0'); 
   signal adder_valid : std_logic;
   signal adder_last : std_logic;
   signal adder_ready : std_logic;
+
+  signal ready_R : std_logic := '0';
 begin
+  Ready_buf : process(Clk_i,Rst_i)
+  begin
+    if rising_edge(Clk_i) then 
+      if Rst_i = '1' then
+        ready_R <= '0';
+      else
+        ready_R <= M_Ready_i;
+      end if;
+    end if;
+  end process;
 
-  S_Ready_o <= M_Ready_i;
-
+  S_Ready_o <= ready_R and M_Ready_i;
   Kernels: for i in 0 to INPUT_CHANNEL_NUMBER-1 generate
     Kernel: entity work.Kernel3x3_log2
       generic map (
@@ -170,18 +180,19 @@ begin
   end generate;
 
   adders: process(Clk_i,Rst_i) is 
-    variable add_up :signed(ACTIVATION_WIDTH+ADDER_STAGES downto 0); 
+    variable add_up :signed(ACTIVATION_WIDTH+ADDER_STAGES downto 0) := (others => '0') ; 
   begin
     if rising_edge(Clk_i) then 
       if Rst_i = '1' then 
         for i in 0 to INPUT_CHANNEL_NUMBER-1 loop 
           add_up := (others => '0');
+          adder_out <= (others => '0');
         end loop;   
         adder_valid <= '0';
         adder_last  <= '0';
       elsif M_Ready_i = '1' then 
         add_up := (others => '0');
-        for i in 1 to INPUT_CHANNEL_NUMBER-1 loop 
+        for i in 0 to INPUT_CHANNEL_NUMBER-1 loop 
           add_up := add_up + resize(signed(kernel_outputs(i)),ACTIVATION_WIDTH+ADDER_STAGES+1);
         end loop;
         adder_out <= std_logic_vector(add_up);
@@ -198,9 +209,11 @@ begin
       if rising_edge(Clk_i) then 
         if Rst_i = '1' then 
           M_Y_data_o <= (others => '0'); 
+          M_Valid_o <= '0';
+          M_Last_o <= '0';
         elsif M_Ready_i = '1' then 
           M_Last_o <= adder_last;
-          M_valid_o <= adder_valid;
+          M_Valid_o <= adder_valid;
           if adder_out(adder_out'left) = '1' then
               M_Y_data_o <= (others => '0'); -- Set negative values to zero 
           elsif adder_out(adder_out'left downto adder_out'left-CHANNEL_FRACTION_SHIFT+1) /= (adder_out(adder_out'left downto adder_out'left-CHANNEL_FRACTION_SHIFT+1)'range => '0') then
@@ -220,9 +233,11 @@ begin
       if rising_edge(Clk_i) then 
         if Rst_i = '1' then  
           M_Y_data_o <= (others => '0');  
+          M_Valid_o <= '0';
+          M_Last_o <= '0';          
         elsif M_Ready_i = '1' then 
           M_Last_o <= adder_last;
-          M_valid_o <= adder_valid;
+          M_Valid_o <= adder_valid;
           if adder_out(adder_out'left) = '1' then
               M_Y_data_o <= (others => '0'); -- Set negative values to zero 
           else

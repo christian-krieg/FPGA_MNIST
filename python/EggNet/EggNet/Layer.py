@@ -777,7 +777,7 @@ class Conv2d_shift_Layer(Layer):
             self.weight_original = weight[:,:,0:in_channels,0:out_channels]
             self.bias_original = bias[0:in_channels*out_channels].reshape([in_channels,out_channels])
             if gen_parameter_from_float == True:
-                self.weight_shifts,self.weight_signs,self.bias_sh = quant_log2(weight,bias,self.activation_width,self.bias_width)
+                self.weight_shifts,self.weight_signs,self.bias_sh = quant_log2(weight,bias,self.shift_width,self.bias_width)
                 self.bias_sh = self.bias_sh[0:in_channels*out_channels].reshape([in_channels,out_channels])
                 self.weight_signs = self.weight_signs[:,:,0:in_channels,0:out_channels]
                 self.weight_shifts = self.weight_shifts[:,:,0:in_channels,0:out_channels]

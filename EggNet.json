@@ -5,14 +5,18 @@
     "Activation bit width": 8,
     "Bit width of weight shifts": 3,
     "Bias bit width": 9,
-    "Bit width of kernel fraction shifts": 2,
-    "Bit width of channel fraction shifts": 3
+    "Bit width of kernel exponent shifts": 2,
+    "Bit width of channel exponent shifts": 3
   },
-  "Fractions" : {
-    "Input Fraction" : 8,
-    "Layer 1 kernel output fraction" : 7,
-    "Layer 1 layer output fraction" : 6,
-    "Layer 2 kernel output fraction" : 4,
-    "Layer 2 layer output fraction" : 4
+  "Exponents" : {
+    "Input Exponent" : 8,
+    "Layer 1" : {
+      "Kernel output exponent" : 7, 
+      "Layer output exponent" : 7
+    },
+    "Layer 2" : {
+      "Kernel output exponent" : 6, 
+      "Layer output exponent" : 4
+    }
   }
 }
