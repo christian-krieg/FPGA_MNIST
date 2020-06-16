@@ -406,9 +406,6 @@ class ReshapeLayer(Layer):
 
 class FlattenLayer(Layer):
 
-    def __init__(self):
-        super(FlattenLayer, self).__init__()
-
     def __call__(self, *args, **kwargs):
         x = args[0]
         return np.reshape(x, newshape=(x.shape[0], -1))
@@ -438,17 +435,6 @@ class CustomReshapeLayer(Layer):
         return x_
 
 
-class FlattenLayer(Layer):
-
-    def __init__(self):
-        super(Layer, self).__init__()
-
-    def __call__(self, *args, **kwargs):
-        x = args[0]
-        assert x.ndim >= 2
-        b = x.shape[0]
-        return np.reshape(x, newshape=(b, -1))
-
 
 class BreakpointLayer(Layer):
 
@@ -460,7 +446,7 @@ class BreakpointLayer(Layer):
         import platform
         if platform.python_version() < "3.7":
             print("Breakpoint keyword not supported")
-
+        
         if self.enabled:
             breakpoint()
 
