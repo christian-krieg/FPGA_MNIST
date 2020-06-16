@@ -23,8 +23,8 @@ entity tb_conv_channel is
     MIF_PATH              : string := "../../mif/";
     WEIGHT_MIF_PREAMBLE   : STRING := "Weight_";
     BIAS_MIF_PREAMBLE     : STRING := "Bias_";
-    CH_FRAC_MIF_PREAMBLE  : STRING := "Channel_Fraction_shift_";
-    K_FRAC_MIF_PREAMBLE   : STRING := "Kernel_Fraction_shift_"
+    CH_FRAC_MIF_PREAMBLE  : STRING := "Layer_Exponent_shift_";
+    K_FRAC_MIF_PREAMBLE   : STRING := "Kernel_Exponent_shift_"
   );
 end entity;
 
@@ -102,18 +102,13 @@ begin
             
             s_data(0) <= activation_tile;
             counter <= counter +1;
-            s_valid <= '1';
-            -- *** Set last flag at the end of each image *** 
-            if j = test_img_dim(1)-1 and k = test_img_dim(2)-1 then 
-              s_last <= '1';
-            else 
-              s_last <= '0';
-            end if;
-            
-
+            s_valid <= '1';            
+            s_last <= '0';
           end loop;  
-        end loop;  
+        end loop; 
+        s_last <= '1';
       end loop;  
+      wait for TbPeriod*15; 
     end procedure;
 
     procedure check_clock(testdata_filepath : string) is
@@ -147,29 +142,30 @@ begin
       end if;
     end loop;
     test_runner_cleanup(runner);
+    TbSimEnded <= '1';
     wait;
   end process;
 
-Stimuli_gen: process(layer_clk,layer_aresetn)
-  variable RV : RandomPType ; 
-  variable DataSigned : signed(7 downto 0) ;
-begin
-  --RV.InitSeed (RV'instance_name)  ;              -- Generate initial seeds
-  if layer_aresetn = '0' then
-    m_Ready <= '0';    
-  elsif rising_edge(layer_clk) then 
-    --Generate a value in range -1 to 127
-    if RANDOM_READY = '1' then
-      DataSigned := RV.RandSigned(-1,127, 8);
-      if to_integer(DataSigned) < 0 then
-        m_Ready <= not m_Ready;
-      end if;  
-    else 
-      m_Ready <= '1';
-    end if;
+  Stimuli_gen: process(layer_clk,layer_aresetn)
+    variable RV : RandomPType ; 
+    variable DataSigned : signed(7 downto 0) ;
+  begin
+    --RV.InitSeed (RV'instance_name)  ;              -- Generate initial seeds
+    if layer_aresetn = '0' then
+      m_Ready <= '0';    
+    elsif rising_edge(layer_clk) then 
+      --Generate a value in range -1 to 127
+      if RANDOM_READY = '1' then
+        DataSigned := RV.RandSigned(-1,127, 8);
+        if to_integer(DataSigned) < 0 then
+          m_Ready <= not m_Ready;
+        end if;  
+      else 
+        m_Ready <= '1';
+      end if;
 
-  end if;
-end process; 
+    end if;
+  end process; 
   
   Channel:  entity work.Conv_channel
     Generic map( 
@@ -210,6 +206,9 @@ end process;
       info("[" & integer'image(batch_idx) & "][" & integer'image(height_idx) & "][" & integer'image(width_idx) & "] Got: " & integer'image(to_integer(unsigned(m_Y_data))) & " Expect: " & integer'image(result_img_arr(batch_idx,height_idx,width_idx)));
       check_equal(to_integer(unsigned(m_Y_data)),result_img_arr(batch_idx,height_idx,width_idx),
         "[" & integer'image(batch_idx) & "][" & integer'image(height_idx) & "][" & integer'image(width_idx) & "]"); 
+      if height_idx = (result_img_dim(1)-1) and width_idx = (result_img_dim(2)-1) then 
+        check(m_Last = '1', "Expect Last signal to be high at [" & integer'image(batch_idx) & "][" & integer'image(height_idx) & "][" & integer'image(width_idx) & "]"); 
+      end if;
       if width_idx = result_img_dim(2)-1 then 
         if height_idx = result_img_dim(1)-1 then
           batch_idx := iterate(batch_idx,0,result_img_dim(0)-1);

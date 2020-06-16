@@ -8,7 +8,7 @@ LIBRARY work;
 use work.egg_box.all;
 use work.clogb2_Pkg.all;
 
-entity Conv_channel is
+entity conv_channel is
   Generic ( 
     LAYER_ID : integer := 1; -- ID of the Layer. Reuired for reading correct MIF files
     OUTPUT_CHANNEL_ID : integer := 1; -- ID of the output channel. Required for reading correct MIF files
@@ -36,9 +36,9 @@ entity Conv_channel is
     M_Last_o      : out std_logic := '0';
     M_Ready_i     : in std_logic := '0'
   );
-end Conv_channel;
+end conv_channel;
 
-architecture Behavioral of Conv_channel is
+architecture Behavioral of conv_channel is
 
   type weight_shift_array_t is array (0 to INPUT_CHANNEL_NUMBER-1) of kernel_shift_array_t;
   type weight_sign_array_t is array (0 to INPUT_CHANNEL_NUMBER-1) of kernel_sign_array_t;
