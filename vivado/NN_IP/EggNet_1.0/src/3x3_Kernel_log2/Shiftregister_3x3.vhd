@@ -7,7 +7,7 @@ entity ShiftRegister_3x3 is
   Port (
     -- Clk and reset
     Clk_i           : in  STD_LOGIC; -- clock
-    nRst_i          : in  STD_LOGIC; -- active low reset 
+    Rst_i          : in  STD_LOGIC; -- active low reset 
     
     -- Slave interface to previous memory controller  
     S_X_data_1_i      : in  STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0); --  Input vector element 1 |Vector: trans(1,2,3)
@@ -16,11 +16,11 @@ entity ShiftRegister_3x3 is
     S_Valid_i	    : in  STD_LOGIC; -- indicates if input data is valid 
     S_Newrow_i     : in  STD_LOGIC; -- indicates that a new row starts 
     S_Last_i       : in  STD_LOGIC; -- indicates end of block 
-    S_Ready_o      : out STD_LOGIC; -- indicates if shiftregister is ready to for new data 
+    S_Ready_o      : out STD_LOGIC := '0'; -- indicates if shiftregister is ready to for new data 
    
     M_X_data_o      : out kernel_input_array_t;  
-    M_Valid_o	    : out STD_LOGIC; -- indicates if output data is valid 
-    M_Last_o       : out STD_LOGIC; -- indicates end of block 
+    M_Valid_o	    : out STD_LOGIC := '0'; -- indicates if output data is valid 
+    M_Last_o       : out STD_LOGIC := '0'; -- indicates end of block 
     M_Ready_i      : in  STD_LOGIC  -- indicates if next slave is ready to for new data   
   );
 end ShiftRegister_3x3;
@@ -35,134 +35,115 @@ attribute srl_style : string;
 
 
 
-  type STATES is (INIT,NEW_LINE,RUN);
-  signal state     :STATES;
+  type STATES is (INIT,NEW_ROW,RUN);
+  signal state     :STATES := INIT;
   
-  signal data_buffer_1 : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  signal data_buffer_2 : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  signal data_buffer_3 : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  
-  signal data_1    : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  signal data_2    : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  signal data_3    : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  signal data_4    : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  signal data_5    : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  signal data_6    : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  signal data_7    : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  signal data_8    : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  signal data_9    : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0);
-  
+  signal data_buffer_1 : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0) := (others => '0');
+  signal data_buffer_2 : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0) := (others => '0');
+  signal data_buffer_3 : STD_LOGIC_VECTOR((ACTIVATION_WIDTH - 1) downto 0) := (others => '0');
+
+  signal shift_reg : kernel_input_array_t := (others => (others => '0'));  
   attribute ram_style : string;
-  attribute ram_style of data_1 : signal is "distributed";
-  attribute ram_style of data_2 : signal is "distributed";
-  attribute ram_style of data_3 : signal is "distributed";
-  attribute ram_style of data_4 : signal is "distributed";
-  attribute ram_style of data_5 : signal is "distributed";
-  attribute ram_style of data_6 : signal is "distributed";
-  attribute ram_style of data_7 : signal is "distributed";
-  attribute ram_style of data_8 : signal is "distributed";
-  attribute ram_style of data_9 : signal is "distributed";  
-  attribute ram_style of data_buffer_1 : signal is "distributed";
-  attribute ram_style of data_buffer_2 : signal is "distributed";
-  attribute ram_style of data_buffer_3 : signal is "distributed";  
+  attribute ram_style of shift_reg : signal is "distributed";
     
-  
+  signal buffer_ready : STD_LOGIC := '0';
+  signal m_ready_R : STD_LOGIC := '0';
+  signal m_valid : std_logic := '0';
 
 begin
 
-  M_X_data_o(0) <= data_1;
-  M_X_data_o(1) <= data_2;
-  M_X_data_o(2) <= data_3;
-  M_X_data_o(3) <= data_4;
-  M_X_data_o(4) <= data_5;
-  M_X_data_o(5) <= data_6;
-  M_X_data_o(6) <= data_7;
-  M_X_data_o(7) <= data_8;
-  M_X_data_o(8) <= data_9;
 
-  shifting: process(Clk_i, nRst_i)
+  M_X_data_o <= shift_reg;
+  S_Ready_o <= m_ready_R;
+  M_Valid_o <= m_valid; 
+  --M_Valid_o <= '0' when m_ready_R = '0' and M_Ready_i = '1' else m_valid; 
+  --S_Ready_o <= M_Ready_i or buffer_ready;
+
+  shifting: process(Clk_i, Rst_i)
   begin
-    if nRst_i = '0' then    
-      state <= INIT;
-      M_Last_o <= '0';
-      M_Valid_o <= '0';
-      S_Ready_o <= '1';
-    elsif rising_edge(Clk_i) then
-      
-      case(state) is 
-        when INIT => 
-          S_Ready_o <= '1';
-          M_Last_o <= '0';
-          M_Valid_o <= '0';
-          if S_Valid_i = '1' and S_Newrow_i = '1' then
-            state <= NEW_LINE;
-            data_buffer_1 <= S_X_data_1_i;
-            data_buffer_2 <= S_X_data_2_i;
-            data_buffer_3 <= S_X_data_3_i; 
-          end if; 
-          
+    if rising_edge(Clk_i) then
+      if Rst_i = '1' then    
+        state <= INIT;
+        M_Last_o <= '0';
+        m_valid <= '0';
+        shift_reg <= (others => (others => '0')); 
+        buffer_ready <= '0';
+        data_buffer_1 <= (others => '0');
+        data_buffer_2 <= (others => '0');
+        data_buffer_3 <= (others => '0');
+      else 
+        m_ready_R <= M_Ready_i;
+        case(state) is 
+          when INIT => 
+            M_Last_o <= '0';
+            m_valid <= '0';
+            if S_Valid_i = '1' and S_Newrow_i = '1' then
+              state <= NEW_ROW;
+              data_buffer_1 <= S_X_data_1_i;
+              data_buffer_2 <= S_X_data_2_i;
+              data_buffer_3 <= S_X_data_3_i; 
+              --buffer_ready <= '0';
+            else
+              --buffer_ready <= '1';
+            end if; 
+            
 
-        when NEW_LINE => 
-          S_Ready_o <= '1';
-          M_Last_o <= '0';
-          if S_Valid_i = '1' then
-            state <= RUN;
-            data_1 <= (others => '0');
-            data_2 <= (others => '0');
-            data_3 <= (others => '0');
-            data_4 <= data_buffer_1;
-            data_5 <= data_buffer_2;
-            data_6 <= data_buffer_3;
-            data_7 <= S_X_data_1_i;
-            data_8 <= S_X_data_2_i;
-            data_9 <= S_X_data_3_i;
-            M_Valid_o <= '1';
-          else 
-            M_Valid_o <= '0';
-          end if;
-        
-        when RUN => 
-          S_Ready_o <= M_Ready_i;
-          if S_Valid_i = '1' then
-            M_Valid_o <= '1';
-            if M_Ready_i = '1' then 
+          when NEW_ROW => 
+            M_Last_o <= '0';
+            if S_Valid_i = '1' then
+              state <= RUN;
+              shift_reg(0) <= (others => '0');
+              shift_reg(3) <= (others => '0');
+              shift_reg(6) <= (others => '0');
+              shift_reg(1) <= data_buffer_1;
+              shift_reg(4) <= data_buffer_2;
+              shift_reg(7) <= data_buffer_3;
+              shift_reg(2) <= S_X_data_1_i;
+              shift_reg(5) <= S_X_data_2_i;
+              shift_reg(8) <= S_X_data_3_i;
+            end if;
+            m_valid <= S_Valid_i;
+
+          when RUN => 
+            if M_Ready_i = '1' and S_Valid_i = '1' then
               if S_Newrow_i = '1' then 
-                data_1 <= data_4;
-                data_2 <= data_5;
-                data_3 <= data_6;
-                data_4 <= data_7;
-                data_5 <= data_8;
-                data_6 <= data_9;
-                data_7 <= (others => '0');
-                data_8 <= (others => '0');
-                data_9 <= (others => '0'); 
+                shift_reg(0) <= shift_reg(1);
+                shift_reg(3) <= shift_reg(4);
+                shift_reg(6) <= shift_reg(7);
+                shift_reg(1) <= shift_reg(2);
+                shift_reg(4) <= shift_reg(5);
+                shift_reg(7) <= shift_reg(8);
+                shift_reg(2) <= (others => '0');
+                shift_reg(5) <= (others => '0');
+                shift_reg(8) <= (others => '0'); 
                 data_buffer_1 <= S_X_data_1_i;
                 data_buffer_2 <= S_X_data_2_i;
                 data_buffer_3 <= S_X_data_3_i;   
                 if S_Last_i = '1' then 
                   state <= INIT;
                 else 
-                  state <= NEW_LINE;
+                  state <= NEW_ROW;
                 end if;
               else  
-                data_1 <= data_4;
-                data_2 <= data_5;
-                data_3 <= data_6;
-                data_4 <= data_7;
-                data_5 <= data_8;
-                data_6 <= data_9;
-                data_7 <= S_X_data_1_i;
-                data_8 <= S_X_data_2_i;
-                data_9 <= S_X_data_3_i;
+                shift_reg(0) <= shift_reg(1);
+                shift_reg(3) <= shift_reg(4);
+                shift_reg(6) <= shift_reg(7);
+                shift_reg(1) <= shift_reg(2);
+                shift_reg(4) <= shift_reg(5);
+                shift_reg(7) <= shift_reg(8);
+                shift_reg(2) <= S_X_data_1_i;
+                shift_reg(5) <= S_X_data_2_i;
+                shift_reg(8) <= S_X_data_3_i; 
               end if;
               if S_Last_i = '1' then 
-                M_Last_o <= S_Last_i; 
+                M_Last_o <= '1'; 
               end if;
             end if; 
-          end if; 
-        when others => 
-          state <= INIT;  
-      end case;
+            m_valid <= S_Valid_i;
+          when others => 
+            state <= INIT;  
+        end case;
+      end if;
     end if;
   end process;
 end Behavioral;
