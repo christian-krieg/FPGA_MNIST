@@ -45,6 +45,7 @@ class Simulator:
         # -- Set up workspace --
         self.LOCAL_ROOT = child.parent
         self.ROOT = root_path
+        print("Simulator Root: "+str(self.ROOT))
         os.makedirs(self.ROOT / "tmp", exist_ok=True)
 
         if testbench_name == None:
@@ -70,8 +71,8 @@ class Simulator:
             self.TB.set_sim_option(
                 'ghdl.sim_flags', [f'--vcd={self.ROOT / "tmp" / (testbench_name + ".vcd")}'])
         if ghdl_stack_size != None:
-            stack_str = "--stack-max-size="+ int(ghdl_stack_size) + "m"
-            self.VU.set_sim_option("ghdl.sim_flags", [stack_str])
+            stack_str = "--max-stack-alloc="+ str(ghdl_stack_size) # --stack-max-size=  --> for some ghdl versions --stack-max-size have to be used instead of --max-stack-alloc 
+            self.TB.set_sim_option("ghdl.sim_flags", [stack_str])
 
         if synopsys == True:
             self.VU.set_compile_option("ghdl.a_flags", ["--ieee=synopsys"])
