@@ -11,11 +11,11 @@ entity conv2d is
     LAYER_ID : integer := 1; -- ID of the Layer. Reuired for reading correct MIF files
     INPUT_CHANNEL_NUMBER : integer range 1 to 512 := 1; -- Number of input channels 
     OUTPUT_CHANNEL_NUMBER : integer range 1 to 512 := 1; -- Number of input channels 
-    MIF_PATH : STRING  := "C:/Users/lukas/Documents/SoC_Lab/FPGA_MNIST/vivado/NN_IP/EggNet_1.0/mif/"; --try if relative path is working 
+    MIF_PATH : STRING  := "C:/Users/lukas/Documents/SoC_Lab/FPGA_MNIST/vivado/NN_IP/EggNet_1.0/mif"; --try if relative path is working 
     WEIGHT_MIF_PREAMBLE : STRING := "Weight_";
     BIAS_MIF_PREAMBLE : STRING := "Bias_";
-    CH_FRAC_MIF_PREAMBLE : STRING := "Channel_Fraction_shift_";
-    K_FRAC_MIF_PREAMBLE : STRING := "Kernel_Fraction_shift_"
+    CH_FRAC_MIF_PREAMBLE : STRING := "Layer_Exponent_shift_";
+    K_FRAC_MIF_PREAMBLE : STRING := "Kernel_Exponent_shift_"
   );
   Port (
     -- Clk and reset
@@ -48,26 +48,16 @@ architecture Behavioral of conv2d is
   
   signal channels_ready : std_logic_vector(OUTPUT_CHANNEL_NUMBER-1 downto 0); 
 
-  signal kernel_last : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);
-  signal kernel_valid : std_logic_vector(INPUT_CHANNEL_NUMBER-1 downto 0);  
-  
-  constant ADDER_STAGES: integer := clogb2(INPUT_CHANNEL_NUMBER); 
-  --type adder_tree_array_t is array (natural range<>) of STD_LOGIC_VECTOR;
-  --signal adder_out : adder_outputs(INPUT_CHANNEL_NUMBER-1 downto 0)(ACTIVATION_WIDTH+ADDER_STAGES-1 downto 0); 
-  signal adder_out : std_logic_vector(ACTIVATION_WIDTH+ADDER_STAGES-1 downto 0); 
-  signal adder_valid : std_logic;
-  signal adder_last : std_logic;
-  signal adder_ready : std_logic;
 begin
 
   Shiftregisters: for i in 0 to INPUT_CHANNEL_NUMBER-1 generate
     Shiftregister: entity work.ShiftRegister_3x3
       port map(
         Clk_i       => Clk_i, 
-        nRst_i      => Rst_i, 
+        Rst_i      => Rst_i, 
         S_X_data_1_i => S_X_data_1_i((i+1)*ACTIVATION_WIDTH-1 downto i*ACTIVATION_WIDTH), 
-        S_X_data_2_i => S_X_data_1_i((i+1)*ACTIVATION_WIDTH-1 downto i*ACTIVATION_WIDTH), 
-        S_X_data_3_i => S_X_data_1_i((i+1)*ACTIVATION_WIDTH-1 downto i*ACTIVATION_WIDTH), 
+        S_X_data_2_i => S_X_data_2_i((i+1)*ACTIVATION_WIDTH-1 downto i*ACTIVATION_WIDTH), 
+        S_X_data_3_i => S_X_data_3_i((i+1)*ACTIVATION_WIDTH-1 downto i*ACTIVATION_WIDTH), 
         S_Valid_i  => S_Valid_i,
         S_Newrow_i => S_Newrow_i,
         S_Last_i   => S_Last_i, 
