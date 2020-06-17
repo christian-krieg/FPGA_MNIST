@@ -145,7 +145,6 @@ class VU_Runner():
             self.VU = VUnit.from_argv(['--version'])
             return 
         # --- Create a tmp dir
-        print("Runner Root: "+str(self.ROOT))
         os.makedirs(self.ROOT / "tmp", exist_ok=True)
         vunit_args = ['--output-path',str(self.ROOT / 'tmp')]
         

@@ -35,11 +35,12 @@ class Testbench(EggUnit.Simulator):
         self.generator = Egg_Generator(hyper_par_path)
         self.generator.generate_mif(self.param_path,root_path.parent / 'mif')
         
-        super().__init__(vunit, libname, root_path,pathlib.Path(__file__),testbench_name=testbench_name,vcd=vcd,synopsys=synopsys)
-       
+        super().__init__(vunit, libname, root_path,pathlib.Path(__file__),testbench_name=testbench_name,vcd=vcd,synopsys=synopsys,ghdl_stack_size=512)
+        mif_path = str(root_path.resolve().parent / 'mif')
+        self.TB.set_generic('MIF_PATH',mif_path)       
         
     def load_testdata(self):
-        images = super()._use_rand_images(3,randseed=1)
+        images = super()._use_rand_images(10,randseed=1)
         #images = images = np.uint8(np.random.normal(0, 0.3, size=(3,28,28))*255)
         images_c = np.zeros(images.shape + (1,)) 
         images_c[:,:,:,0] = images
@@ -50,7 +51,6 @@ class Testbench(EggUnit.Simulator):
         super().load_testdata(results[:,:,:,0],"resultdata.csv","TB_CSV_RESULTS_FILE")   
         
     def _gen_Result_data(self, images):
-        # TODO: Reado Input exonent etc. from generator
         conv_layer = Conv2d_shift_Layer(1,16,1,self.param_path, self.generator.exponents["Input Exponent"],
                                         self.generator.exponents["Layer 1"]["Kernel output exponent"],
                                         self.generator.exponents["Layer 1"]["Layer output exponent"])
@@ -71,9 +71,8 @@ if __name__ == "__main__":
     spec = importlib.util.spec_from_file_location(RUN_PATH.stem,RUN_PATH)
     run_py = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(run_py)
-    
     # -- Setup arguments 
-    args = ['-t', pathlib.Path(__file__).stem, '--testpath',str(pathlib.Path(__file__).parent.resolve()), '--vcd']
+    args = ['-t', pathlib.Path(__file__).stem, '--testpath',str(pathlib.Path(__file__).parent.resolve()), '--vcd', '--gtkwave']
     # -- Initialze vunit 
     runner = run_py.VU_Run(ROOT,SRC_ROOT,args)
     runner.run_test()

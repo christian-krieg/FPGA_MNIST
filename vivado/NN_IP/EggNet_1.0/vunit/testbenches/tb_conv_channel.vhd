@@ -65,9 +65,12 @@ begin
       constant test_img_arr : int_vec_5d_t := csvGetNumpy5d(testdata_filepath);      
       variable activation_tile : kernel_input_array_t; 
       variable tile_index : integer := 0;
+      variable RV : RandomPType ; 
+      variable DataSigned : signed(7 downto 0) ;
     begin
       printDim(test_img_dim);
       layer_aresetn <= '0'; 
+      m_Ready <= '0';
       counter <= 0;
       for i in 0 to KERNEL_SIZE-1 loop
         s_data(0)(i) <= (others =>  '0');
@@ -76,6 +79,7 @@ begin
       s_last <= '0'; 
       wait for TbPeriod*3; 
       layer_aresetn <= '1'; 
+      m_Ready <= '1';
       wait for TbPeriod; 
       -- *** iterate through batches *** 
       for i in 0 to test_img_dim(0)-1 loop
@@ -94,7 +98,21 @@ begin
                 tile_index := iterate(tile_index,0,KERNEL_SIZE-1);                                              
               end loop;  
             end loop;
-            wait until layer_clk = '1'; 
+            if RANDOM_READY = '1' then
+              DataSigned := RV.RandSigned(-1,64, 8);
+              if to_integer(DataSigned) < 0 then
+                DataSigned := to_signed(1,8);
+                while to_integer(DataSigned) > 0 loop
+                  m_Ready <= '0'; 
+                  DataSigned := RV.RandSigned(-1,127, 8);
+                  wait until layer_clk = '1';
+                end loop;
+                m_Ready <= '1'; 
+                wait until layer_clk = '1';
+              else
+                wait until layer_clk = '1'; 
+              end if;
+            end if;
             if s_ready /= '1' then
               wait until s_ready = '1'; 
             end if;
@@ -108,6 +126,8 @@ begin
         end loop; 
         s_last <= '1';
       end loop;  
+      wait until layer_clk = '1';
+      s_valid <= '0'; 
       wait for TbPeriod*15; 
     end procedure;
 
@@ -145,27 +165,6 @@ begin
     TbSimEnded <= '1';
     wait;
   end process;
-
-  Stimuli_gen: process(layer_clk,layer_aresetn)
-    variable RV : RandomPType ; 
-    variable DataSigned : signed(7 downto 0) ;
-  begin
-    --RV.InitSeed (RV'instance_name)  ;              -- Generate initial seeds
-    if layer_aresetn = '0' then
-      m_Ready <= '0';    
-    elsif rising_edge(layer_clk) then 
-      --Generate a value in range -1 to 127
-      if RANDOM_READY = '1' then
-        DataSigned := RV.RandSigned(-1,127, 8);
-        if to_integer(DataSigned) < 0 then
-          m_Ready <= not m_Ready;
-        end if;  
-      else 
-        m_Ready <= '1';
-      end if;
-
-    end if;
-  end process; 
   
   Channel:  entity work.Conv_channel
     Generic map( 

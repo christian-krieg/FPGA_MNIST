@@ -45,7 +45,6 @@ class Simulator:
         # -- Set up workspace --
         self.LOCAL_ROOT = child.parent
         self.ROOT = root_path
-        print("Simulator Root: "+str(self.ROOT))
         os.makedirs(self.ROOT / "tmp", exist_ok=True)
 
         if testbench_name == None:
