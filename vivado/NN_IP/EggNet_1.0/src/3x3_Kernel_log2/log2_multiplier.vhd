@@ -29,9 +29,10 @@ entity log2_multiplier is
 end log2_multiplier;
 
 architecture Behavioral of log2_multiplier is
-  signal x_signed : std_logic_vector(INPUT_WIDTH downto 0);
-  signal carry    : std_logic_vector(INPUT_WIDTH downto 0) := (others => '0');
-  signal x_shift  : std_logic_vector(INPUT_WIDTH - 1 downto 0);
+  signal x_signed : std_logic_vector(INPUT_WIDTH downto 0) := (others => '0');
+  signal adder_out : std_logic_vector(((INPUT_WIDTH-1)/4)*4+4 downto 0) := (others => '0');
+  signal carry    : std_logic_vector(((INPUT_WIDTH-1)/4)*4+4 downto 0) := (others => '0');
+  signal x_shift  : std_logic_vector(((INPUT_WIDTH-1)/4)*4+4 downto 0) := (others => '0');
 
 begin
 
@@ -55,9 +56,9 @@ begin
       x_shift <= (others => '0');
     else
       if S_Sign_i = "1" then
-        x_shift <= not std_logic_vector(SHIFT_RIGHT(unsigned(S_X_data_i), to_integer(unsigned(S_Shift_i))));
+        x_shift(INPUT_WIDTH-1 downto 0) <= not std_logic_vector(SHIFT_RIGHT(unsigned(S_X_data_i), to_integer(unsigned(S_Shift_i))));
       else
-        x_shift <= std_logic_vector(SHIFT_RIGHT(unsigned(S_X_data_i), to_integer(unsigned(S_Shift_i))));
+        x_shift(INPUT_WIDTH-1 downto 0) <= std_logic_vector(SHIFT_RIGHT(unsigned(S_X_data_i), to_integer(unsigned(S_Shift_i))));
       end if;
     end if;
   end process;
@@ -68,15 +69,15 @@ begin
     CARRY4_inst : CARRY4
       port map(
         CO     => carry(4 * i + 3 + 1 downto 4 * i + 1), -- 4-bit carry out
-        O      => x_signed(4 * i + 3 downto 4 * i),      -- 4-bit carry chain XOR data out
+        O      => adder_out(4 * i + 3 downto 4 * i),      -- 4-bit carry chain XOR data out
         CI     => carry(4 * i),                          -- 1-bit carry cascade input
         CYINIT => '0',                                   -- 1-bit carry initialization
         DI     => x_shift(4 * i + 3 downto 4 * i),       -- 4-bit carry-MUX data in
         S      => x_shift(4 * i + 3 downto 4 * i)        -- 4-bit carry-MUX select input
       );
   end generate;
-
-  x_signed(x_signed'left) <= S_Sign_i(0);
+  x_signed(INPUT_WIDTH-1 downto 0) <= adder_out(INPUT_WIDTH-1 downto 0);
+  x_signed(INPUT_WIDTH) <= S_Sign_i(0);
   Register_Yo : for i in 0 to INPUT_WIDTH generate
     FDRE_inst : FDRE
       generic map(
@@ -85,7 +86,7 @@ begin
         Q  => M_Weighted_X(i),   -- Data output
         C  => Clk_i,             -- Clock input
         CE => M_Ready_i,         -- Clock enable input
-        R  => carry(carry'left) and M_Ready_i, -- Synchronous reset input
+        R  => carry(INPUT_WIDTH) and M_Ready_i, -- Synchronous reset input
         D  => x_signed(i)        -- Data input
       );
   end generate;

@@ -26,11 +26,12 @@ architecture Behavioral of quantized_adder is
   constant ZERO_BIT : bit := '0';
   constant ZERO_STD_ULOGIC : std_ulogic := '0';
   signal carry : std_logic_vector(((INPUT_WIDTH-1)/4)*4+4 downto 0) := (others => '0'); -- Divide by 4 and then multiply by 4 is used to get a multiple of 4 as result 
-  signal sum : std_logic_vector(((INPUT_WIDTH-1)/4)*4+4 downto 0) := (others => '0'); 
+  signal chain_out : std_logic_vector(((INPUT_WIDTH-1)/4)*4+4 downto 0) := (others => '0'); 
   signal a_sig : std_logic_vector(((INPUT_WIDTH-1)/4)*4+3 downto 0) := (others => '0'); 
   signal a_xor_b : std_logic_vector(((INPUT_WIDTH-1)/4)*4+3 downto 0) := (others => '0'); 
   signal sum_R : std_logic_vector(OUTPUT_WIDTH-1 downto 0) := (others => '0'); 
   signal shift :std_logic_vector(OUTPUT_WIDTH-1 downto 0) := (others => '0'); 
+  signal sum :std_logic_vector(INPUT_WIDTH downto 0);
   signal overflow_neg : std_ulogic := '0';
   signal underflow_neg :std_ulogic := '0'; 
   signal overflow_pos_R : std_ulogic := '0';
@@ -46,15 +47,15 @@ CARRY_chain: for i in 0 to (INPUT_WIDTH-1)/4 generate
   CARRY4_inst : CARRY4
   port map (
     CO => carry(4*i+3+1 downto 4*i+1), -- 4-bit carry out
-    O => sum(4*i+3 downto 4*i), -- 4-bit carry chain XOR data out
+    O => chain_out(4*i+3 downto 4*i), -- 4-bit carry chain XOR data out
     CI => carry(4*i), -- 1-bit carry cascade input
     CYINIT => carry(0), -- 1-bit carry initialization
     DI => a_sig(4*i+3  downto 4*i), -- 4-bit carry-MUX data in
     S => a_xor_b(4*i+3  downto 4*i) -- 4-bit carry-MUX select input
   );
 end generate;
+sum(INPUT_WIDTH-1 downto 0) <= chain_out(INPUT_WIDTH-1 downto 0);
 sum(INPUT_WIDTH) <= carry(INPUT_WIDTH) xor a_xor_b(INPUT_WIDTH-1);
-
 -- ***** Overflow detection and Quantization ******* 
 -- Overflow can occur if 
 --  - Overflow in Carry chain is detected 
