@@ -64,13 +64,13 @@ ReLU: process(CLK_i) is
 begin
   if rising_edge(CLK_i) then 
     if Ready_i = '1' then   
-      if carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "01" or (sum(INPUT_WIDTH) = '0' and sum(INPUT_WIDTH-1 downto INPUT_WIDTH-FRAC_SHIFT) /= (sum(INPUT_WIDTH-2 downto INPUT_WIDTH-1-FRAC_SHIFT)'range => '0')) then
+      if carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "01" or (sum(INPUT_WIDTH) = '0' and sum(INPUT_WIDTH-1 downto OUTPUT_WIDTH-1+FRAC_SHIFT) /= (sum(INPUT_WIDTH-1 downto OUTPUT_WIDTH-1+FRAC_SHIFT)'range => '0')) then
         overflow_pos <= '1';
         --INFO("Overflow positive| Carry: " & to_string(carry) & " Sum: " &  to_string(sum)); 
       else 
         overflow_pos <= '0';
       end if;
-      if carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "10" or (sum(INPUT_WIDTH) = '1' and sum(INPUT_WIDTH-1 downto INPUT_WIDTH-FRAC_SHIFT) /= (sum(INPUT_WIDTH-2 downto INPUT_WIDTH-1-FRAC_SHIFT)'range => '1')) then
+      if carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "10" or (sum(INPUT_WIDTH) = '1' and sum(INPUT_WIDTH-1 downto OUTPUT_WIDTH-1+FRAC_SHIFT) /= (sum(INPUT_WIDTH-1 downto OUTPUT_WIDTH-1+FRAC_SHIFT)'range => '1')) then
         overflow_neg <= '1';
         --INFO("Overflow negative| Carry: " & to_string(carry) & " Sum: " &  to_string(sum)); 
       else 
@@ -100,7 +100,7 @@ begin
       if carry(INPUT_WIDTH downto INPUT_WIDTH-1) = "10" then
         overflow_neg <= '1';
       end if;
-      shift <= sum(INPUT_WIDTH-1 downto INPUT_WIDTH - OUTPUT_WIDTH);
+      shift <= sum(OUTPUT_WIDTH-1 downto 0);
     end if;
   end if;
 end process;  
@@ -115,7 +115,7 @@ NegOverflow: for i in 0 to OUTPUT_WIDTH-2 generate
     Q => sum_R(i), -- Data output
     C => CLK_i, -- Clock input
     CE => Ready_i, -- Clock enable input
-    R => overflow_neg or underflow_neg, -- Synchronous reset input
+    R => (overflow_neg or underflow_neg) and Ready_i, -- Synchronous reset input
     D => shift(i) -- Data input
   );
 end generate;
@@ -127,7 +127,7 @@ FDRE_underflow : FDRE
   Q => sum_R(OUTPUT_WIDTH-1), -- Data output
   C => CLK_i, -- Clock input
   CE => Ready_i, -- Clock enable input
-  R => underflow, -- Synchronous reset input
+  R => underflow and Ready_i, -- Synchronous reset input
   D => shift(OUTPUT_WIDTH-1) -- Data input
 );
 
@@ -150,7 +150,7 @@ PosOverflow: for i in 0 to OUTPUT_WIDTH-2 generate
     Q => S_o(i), -- Data output
     C => CLK_i, -- Clock input
     CE => Ready_i, -- Clock enable input
-    S => overflow_pos_R, -- Synchronous reset input
+    S => overflow_pos_R and Ready_i, -- Synchronous reset input
     D => sum_R(i) -- Data input
   );
 end generate;
@@ -162,7 +162,7 @@ FDRE_ov_pos_sign : FDRE
   Q => S_o(OUTPUT_WIDTH-1), -- Data output
   C => CLK_i, -- Clock input
   CE => Ready_i, -- Clock enable input
-  R => overflow_pos_R, -- Synchronous reset input
+  R => overflow_pos_R and Ready_i, -- Synchronous reset input
   D => sum_R(OUTPUT_WIDTH-1) -- Data input
 );   
 
