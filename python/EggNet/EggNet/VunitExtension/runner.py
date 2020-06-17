@@ -105,7 +105,8 @@ class VU_Runner():
         parser.add_argument("--unisim-src", action="store_true",
                         help="Unisim path points to source files, needs to be compiled")
         parser.add_argument("--gtkwave", action="store_true",
-                            help="Launches gtkwave after simulation") 
+                            help="Launches gtkwave after simulation. If a save file with testbench name and suffix \
+                                .gtkw exists it will be loaded automatically into gtkwave") 
                         
         # Arguments used in vunit                 
         parser.add_argument("--version", action="store_true",
@@ -144,11 +145,16 @@ class VU_Runner():
             self.VU = VUnit.from_argv(['--version'])
             return 
         # --- Create a tmp dir
+        print("Runner Root: "+str(self.ROOT))
         os.makedirs(self.ROOT / "tmp", exist_ok=True)
-        vunit_args = ['--output-path','./tmp']
+        vunit_args = ['--output-path',str(self.ROOT / 'tmp')]
         
         if self.args.gtkwave:
             vunit_args.append('--gui')  
+            gtkwave_arg = '--gtkwave-args=--save='+str(self.ROOT / 'tmp' / (self.args.testbench[0]+'.gtkw'))
+            gtkwave_arg = gtkwave_arg.replace('\\','/')
+            vunit_args.append(gtkwave_arg)
+            print(vunit_args)
         if self.args.verbose:
             vunit_args.append('--verbose') 
         if self.args.compile:
