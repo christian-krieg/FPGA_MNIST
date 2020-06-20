@@ -1,80 +1,86 @@
 cmake_minimum_required(VERSION 3.10)
 project(EggnetDriver C)
 
+# ------------------------------------
+# Setup/Options
+# ------------------------------------
 
+# Uncomment if there is an "compile with -fPIC" error
+# https://wiki.gentoo.org/wiki/Project:AMD64/Fixing_-fPIC_Errors_Guide
+# set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-###### Setup ######
-# Doc:
+# Find pthreads
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+
+# ------------------------------------
+# Find Packages and Requirements
+# ------------------------------------
+#
+# Useful Doc:
 # https://cmake.org/cmake/help/latest/command/find_package.html
-# Find Pthreads
-#set(THREADS_PREFER_PTHREAD_FLAG ON)
-#find_package(Threads REQUIRED)
-# find_package(Python REQUIRED COMPONENTS Interpreter Development NumPy)
+
+find_package(Threads REQUIRED)
+find_package(SWIG 4 REQUIRED)
 find_package(Python 3.6 REQUIRED COMPONENTS Interpreter Devlopment NumPy)
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# Activate SWIG
+include(UseSWIG)
 
-# https://wiki.gentoo.org/wiki/Project:AMD64/Fixing_-fPIC_Errors_Guide
+# Add LSUIO
+add_subdirectory(lib/lsuio)
+
+
+
+# ------------------------------------
+# Eggnet Driver Software (C)
+# ------------------------------------
+
 add_library(
     EggnetDriver STATIC
-        src/attr.c
-        src/base.c
         src/eggdma.c
         src/eggnet.c
         src/eggstatus.c
-        src/helper.c
-        src/mem.c
+        src/egguio.c
 )
 
+# Setup Include's
+target_include_directories(EggnetDriver
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
+# Link with lsuio
+target_link_libraries(EggnetDriver PRIVATE lsuio)
+
+
+# For quick debugging
 add_executable(EggnetTest src/main.c)
 target_link_libraries(EggnetTest PUBLIC EggnetDriver)
 
-target_include_directories(
-    EggnetDriver
-        BEFORE
-    PRIVATE 
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${Python_INCLUDE_DIR}
-        ${NumPy_INCLUDE_DIR}
+
+
+# ------------------------------------
+# Eggnet Driver Software (Python/Swig)
+# ------------------------------------
+#
+#
+# swig_add_library(<name>
+#                     [TYPE <SHARED|MODULE|STATIC|USE_BUILD_SHARED_LIBS>]
+#                     LANGUAGE <language>
+#                     [NO_PROXY]
+#                     [OUTPUT_DIR <directory>]
+#                     [OUTFILE_DIR <directory>]
+#                     SOURCES <file>...
+#                    )
+
+swig_add_library(PyEggnetDriver
+    LANGUAGE python
+    SOURCES src/eggnet.i
 )
 
-# See: http://swig.org/Doc4.0/Python.html#Python_nn4
-# Link with pthreads
-target_link_libraries(EggnetDriver PUBLIC pthreads)
 
 
-# Add the python wrapper
-add_library(PyEggnetDriver MODULE
-        src/attr.c
-        src/base.c
-        src/eggdma.c
-        src/eggnet.c
-        src/eggstatus.c
-        src/helper.c
-        src/mem.c
-        src/eggnet_wrap.c)
-
-target_include_directories(
-    PyEggnetDriver
-        BEFORE
-    PUBLIC 
-        ${CMAKE_CURRENT_SOURCE_DIR}/../sysroots/linux/usr/include/arm-linux-gnueabihf
-        ${CMAKE_CURRENT_SOURCE_DIR}/../sysroots/linux/usr/include/
-        ${CMAKE_CURRENT_SOURCE_DIR}/../sysroots/numpy_include/include/
-        ${CMAKE_CURRENT_SOURCE_DIR}/../sysroots/python3.6/include/python3.6m
-    PRIVATE
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-
-target_link_directories(PyEggnetDriver
-        BEFORE PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/../sysroots/linux/usr/lib/
-        ${CMAKE_CURRENT_SOURCE_DIR}/../sysroots/linux/lib/arm-linux-gnueabihf
-        ${CMAKE_CURRENT_SOURCE_DIR}/../sysroots/python3.6/lib
-)
-
-# target_link_libraries(PyEggnetDriver PRIVATE python3.6m)
-# set_property(TARGET PyEggnetDriver PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 

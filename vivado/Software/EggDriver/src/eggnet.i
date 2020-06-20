@@ -117,6 +117,6 @@ import_array();
 // ------------------------------------ Wrapping ----------------------------------------
 // Wrap everything declared in this header
 // Alternativly all functions could here be specified manually
-%include "eggnet.h"
+%include "../include/eggnet.h"
 
 
