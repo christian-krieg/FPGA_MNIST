@@ -11,6 +11,9 @@ package nnpkg is
     type vec1d_t is array (natural range <>) of std_logic_vector;
     type vec2d_t is array (natural range <>, natural range <>) of std_logic_vector;
 
+    
+    type nn_alu_type is (ALU_CONV, ALU_FC);    
+
     -- LOG2 for natural numbers
     function nlog2 (x : natural) return natural;
 

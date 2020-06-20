@@ -7,7 +7,7 @@ use IEEE.math_real.log2;
 library vunit_lib;
 context vunit_lib.vunit_context;
 
-library work;
+
 use work.nnpkg.all;
 
 entity tb_nn_alu is

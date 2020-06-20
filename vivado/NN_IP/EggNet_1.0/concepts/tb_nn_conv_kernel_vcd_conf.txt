@@ -1,0 +1,50 @@
+$ version 1.1
+
+# Signals in packages :
+check_pkg.check_enabled
+run_pkg.runner
+
+# Dumb every signal
+/**/*
+
+# Signals in entities :
+/tb_nn_conv_kernel/clk
+/tb_nn_conv_kernel/rst
+/tb_nn_conv_kernel/sim_done
+/tb_nn_conv_kernel/b_i
+/tb_nn_conv_kernel/x_i
+/tb_nn_conv_kernel/w_i
+/tb_nn_conv_kernel/y_o
+/tb_nn_conv_kernel/ctl_alu_type
+/tb_nn_conv_kernel/nn_alu_0/clk
+/tb_nn_conv_kernel/nn_alu_0/rst
+/tb_nn_conv_kernel/nn_alu_0/ctl_alu_type
+/tb_nn_conv_kernel/nn_alu_0/w_i
+/tb_nn_conv_kernel/nn_alu_0/x_i
+/tb_nn_conv_kernel/nn_alu_0/b_i
+/tb_nn_conv_kernel/nn_alu_0/y_o
+/tb_nn_conv_kernel/nn_alu_0/ya_o
+/tb_nn_conv_kernel/nn_alu_0/w_n
+/tb_nn_conv_kernel/nn_alu_0/z_n
+/tb_nn_conv_kernel/nn_alu_0/a_n
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/clk
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/rst
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/x_i
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/w_i
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/y_o
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/z1
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/z2
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/clk
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/rst
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/x_i
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/w_i
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/y_o
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/z1
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/z2
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/clk
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/rst
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/x_i
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/w_i
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/y_o
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/z1
+/tb_nn_conv_kernel/nn_alu_0/gen_alu/nn_alu_0/z2
