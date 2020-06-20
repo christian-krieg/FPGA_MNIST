@@ -16,5 +16,5 @@ setup(name='EggNet',
           '': ['*.txt', '*.rst', '*.i', '*.c', '*.h'],
       },
       test_requires=['numpy', 'wget', 'idx2numpy', 'tensorflow', 'keras', 'torch'],
-      install_requires=['numpy', 'wget', 'idx2numpy'],
+      install_requires=['numpy', 'wget', 'idx2numpy', 'bitstring'],
       )
